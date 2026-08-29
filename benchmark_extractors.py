@@ -7,7 +7,9 @@ is loaded from disk (models/rf30_v3_R.joblib); the other methods are trained her
 
 Numbers here are computed on the small bundled sample (40k/class train, 10k/class
 test), so they approximate the paper, which uses the full multi-million-pixel pools
-(released with the dataset). The method *ranking* is what this reproduces.
+(released with the dataset). The method *ranking* is what this reproduces. The sample
+is class-balanced, so PR-AUC reads higher than the paper's (~1:5 imbalanced) pool;
+ROC-AUC is comparable.
 
     python benchmark_extractors.py
 """

@@ -1,0 +1,20 @@
+# Conda environment for the reproduction code.
+#   conda env create -f environment.yml
+#   conda activate solar-suitability
+name: solar-suitability
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - numpy
+  - scikit-learn
+  - pandas
+  - matplotlib
+  - pillow
+  - requests
+  - shapely
+  - joblib
+  - pip
+  - pip:
+      - earthengine-api
+      - geemap
