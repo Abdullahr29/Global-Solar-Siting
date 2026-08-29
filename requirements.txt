@@ -1,0 +1,10 @@
+numpy
+scikit-learn
+joblib
+pandas
+matplotlib
+pillow
+requests
+shapely
+earthengine-api
+geemap
