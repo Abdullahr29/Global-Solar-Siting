@@ -79,7 +79,7 @@ the random forest is the deployed model.
 
 ## 3. Country-scale suitability map — needs Earth Engine
 
-The forest is applied to a country's AlphaEarth mosaic entirely server-side, then
+The random forest is applied to a country's AlphaEarth mosaic entirely server-side, then
 validated against real sites installed after the imagery year.
 
 **One-time Earth Engine setup (free):**
@@ -98,7 +98,7 @@ validated against real sites installed after the imagery year.
 **Run:**
 ```bash
 python run_country.py Greece
-python run_country.py Spain --year 2019
+python run_country.py Spain --year 2019      # a specific year can be passed as an argument, model runs on AEF 2019, validation on 2021+
 python run_country.py Chile          # any country renders a map, validated where sites are bundled
 ```
 Validation site files are bundled for the paper's thirteen forward-validation countries —
@@ -113,10 +113,6 @@ AlphaEarth (`GOOGLE/SATELLITE_EMBEDDING/V1/ANNUAL`) and the boundaries are publi
 Engine assets, so no extra data is needed. Any country in the boundary table works: with
 a bundled or `--sites` CSV (columns `lon,lat,year`) the map is validated against real
 future sites, and without one it still renders the suitability map and skips validation.
-
-The per-country counts and ROC here use *all* inventory sites installed after the imagery
-year and so differ slightly from the paper's tables, which use a deduplicated,
-country-balanced validation subset; the numbers are of the same magnitude.
 
 ## Data provenance
 
