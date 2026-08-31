@@ -1,4 +1,4 @@
-# Global solar siting from geospatial embeddings — code
+# Global solar siting from geospatial embeddings
 
 Reproduction code for the accompanying paper (under double-blind review). We learn
 solar-siting **suitability** directly from **AlphaEarth Foundations** 64-dimensional
