@@ -2,14 +2,14 @@
 
 Reproduces the comparison in Table 1 of the paper: eight ways of turning a 64-d
 AlphaEarth pixel embedding into a solar-suitability score, all trained on a common
-balanced subsample and scored on the same held-out sample. The deployed random forest
-is loaded from disk (models/rf30_v3_R.joblib); the other methods are trained here.
+subsample and scored on the same held-out sample. The deployed random forest is loaded
+from disk (models/rf30_v3_R.joblib); the other methods are trained here.
 
-Numbers here are computed on the small bundled sample (40k/class train, 10k/class
-test), so they approximate the paper, which uses the full multi-million-pixel pools
-(released with the dataset). The method *ranking* is what this reproduces. The sample
-is class-balanced, so PR-AUC reads higher than the paper's (~1:5 imbalanced) pool;
-ROC-AUC is comparable.
+The bundled sample keeps the paper's ~1:5 solar:non-solar prevalence (train and test),
+drawn from the full multi-million-pixel pools (released with the dataset), so both ROC-AUC
+and PR-AUC reproduce Table 1 to within subsample noise (a few thousandths). ROC-AUC is
+prevalence-invariant; PR-AUC is not, so it is only comparable because the prevalence
+matches the paper's.
 
     python benchmark_extractors.py
 """

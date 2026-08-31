@@ -163,9 +163,9 @@ def main(a):
         yte = np.r_[np.ones(len(d["X_sol_test"])), np.zeros(len(d["X_neg_test"]))]
         min_leaf = DEMO_MIN_LEAF
         print(f"DEMO: training on the bundled sample ({len(Xtr):,} px) with the deployed "
-              "recipe. The sample is class-balanced and small, so the held-out ROC lands "
-              "just under the deployed model's (~0.90) and PR reads higher than the paper's "
-              "imbalanced pool; the ranking and behaviour are what this reproduces.")
+              "recipe, at the paper's ~1:5 prevalence. It reproduces the deployed model's "
+              "held-out ROC/PR to within subsample noise; the leaf floor is relaxed because "
+              "the Earth Engine size cap only binds on the full pool (see the module docstring).")
 
     # identical seed => identical shuffle of features and labels in lockstep
     for arr in (Xtr, ytr):

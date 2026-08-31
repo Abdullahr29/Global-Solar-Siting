@@ -18,7 +18,11 @@ p = rf.predict_proba(X)[:, 1]
 
 print(f"Random forest scored on {len(y):,} held-out AlphaEarth pixels "
       f"({int(y.sum()):,} solar / {int((y == 0).sum()):,} non-solar):")
-print(f"  ROC-AUC {roc_auc_score(y, p):.3f} | PR-AUC {average_precision_score(y, p):.3f}")
+print(f"  ROC-AUC {roc_auc_score(y, p):.3f} | PR-AUC {average_precision_score(y, p):.3f} "
+      f"(PR chance {y.mean():.2f})")
+print("The test pool keeps the paper's ~1:5 solar:non-solar prevalence, so these reproduce "
+      "the deployed RF's row in Table 1. ROC-AUC is prevalence-invariant; PR-AUC is not, so "
+      "it is only meaningful at this stated prevalence.")
 print("\nThe model maps each 64-dimensional AlphaEarth pixel embedding to P(solar).")
 print("Next: `python benchmark_extractors.py` (method comparison) or "
       "`python run_country.py Greece` (map a whole country, needs Earth Engine).")

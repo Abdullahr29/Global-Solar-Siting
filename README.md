@@ -37,7 +37,8 @@ captures the pre-existing landscape rather than the panels.
 
 ```
 models/rf30_v3_R.joblib     the deployed random forest (30 trees, ~7 MB)
-data/px_sample.npz          balanced AlphaEarth pixel sample (40k/class train, 10k/class test)
+data/px_sample.npz          AlphaEarth pixel sample at the paper's ~1:5 prevalence
+                            (12k/60k train, 10k/50k test, solar/non-solar)
 data/sites_<country>.csv    solar-site coordinates for validation (lon, lat, install year);
                             bundled for the paper's 13 forward-validation countries
 quickstart.py               load the model, score the sample        (no Earth Engine)
@@ -137,10 +138,13 @@ future sites, and without one it still renders the suitability map and skips val
 
 - **Model:** a random forest trained on 64-d AlphaEarth annual embeddings of existing
   solar sites (sampled two years before installation) versus globally-random non-solar land.
-- **Pixel sample (`data/px_sample.npz`):** small balanced subsamples of the training and
-  held-out evaluation pools of AlphaEarth pixel embeddings; `X_sol_*` are solar pixels,
-  `X_neg_*` non-solar, each row a 64-d embedding. The test sample is class-balanced, so
-  PR-AUC reads higher than the paper's (~1:5 imbalanced) pool; ROC-AUC is comparable.
+- **Pixel sample (`data/px_sample.npz`):** subsamples of the training and held-out
+  evaluation pools of AlphaEarth pixel embeddings, drawn at the paper's ~1:5
+  solar:non-solar prevalence; `X_sol_*` are solar pixels, `X_neg_*` non-solar, each row a
+  64-d embedding. Because the prevalence matches the paper, both ROC-AUC and PR-AUC
+  reproduce Table 1 to within subsample noise. (ROC-AUC is prevalence-invariant; PR-AUC is
+  not — its value is only meaningful at a stated prevalence, which is why the sample keeps
+  the paper's.)
 - **Site coordinates:** installation locations and years from a public global PV facility
   inventory (https://zenodo.org/records/18794231), used only to validate the maps.
 
