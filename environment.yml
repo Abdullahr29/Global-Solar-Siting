@@ -7,7 +7,7 @@ channels:
 dependencies:
   - python=3.11
   - numpy
-  - scikit-learn
+  - scikit-learn=1.8.0   # match the version the bundled model was trained with
   - pandas
   - matplotlib
   - pillow

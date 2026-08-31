@@ -6,6 +6,10 @@ per-pixel geospatial embeddings: a random forest maps each pixel embedding to
 `P(solar)`, trained on land as it appeared two years *before* installation and global non-solar land, so it
 captures the pre-existing landscape rather than the panels.
 
+![Global solar-suitability preview](figures/global_suitability_map.png)
+
+*Global suitability from the deployed random forest applied to the AlphaEarth 2025 mosaic (100 m preview; brighter = higher predicted P(solar)). A downsampled placeholder for the full 10 m dataset released on acceptance.*
+
 > ⚠️ **Preliminary artifact for peer review.** This is a minimal, self-contained subset
 > of the code with a small data sample — enough to reproduce the paper's key results and
 > apply the model. **The full codebase and the final global 10 m suitability dataset will
@@ -34,8 +38,8 @@ captures the pre-existing landscape rather than the panels.
 ```
 models/rf30_v3_R.joblib     the deployed random forest (30 trees, ~7 MB)
 data/px_sample.npz          balanced AlphaEarth pixel sample (40k/class train, 10k/class test)
-data/sites_greece.csv       solar-site coordinates for validation (lon, lat, install year)
-data/sites_germany.csv
+data/sites_<country>.csv    solar-site coordinates for validation (lon, lat, install year);
+                            bundled for the paper's 13 forward-validation countries
 quickstart.py               load the model, score the sample        (no Earth Engine)
 benchmark_extractors.py     the 8-method comparison of Table 1       (no Earth Engine)
 run_country.py              map + validate a whole country           (needs Earth Engine)
@@ -94,14 +98,21 @@ validated against real sites installed after the imagery year.
 **Run:**
 ```bash
 python run_country.py Greece
-python run_country.py Germany --year 2019
+python run_country.py Spain --year 2019
+python run_country.py Chile          # any country renders a map, validated where sites are bundled
 ```
+Validation site files are bundled for the paper's thirteen forward-validation countries —
+Chile, Colombia, Japan, Greece, Philippines, United States, China, Spain, South Africa,
+Malaysia, Germany, India and Poland — so those produce the validated site-vs-random figure
+out of the box; any other country still renders its suitability map (validation skipped).
+
 Outputs land in `outputs/`: a national suitability heatmap (`.png`), a
 site-vs-random-land score distribution (`_fig.png`), and the raw scores (`_scores.npz`).
 The country name must match the public `USDOS/LSIB_SIMPLE/2017` boundary table; both
 AlphaEarth (`GOOGLE/SATELLITE_EMBEDDING/V1/ANNUAL`) and the boundaries are public Earth
-Engine assets, so no extra data is needed. To validate another country, pass a CSV with
-columns `lon,lat,year` via `--sites`.
+Engine assets, so no extra data is needed. Any country in the boundary table works: with
+a bundled or `--sites` CSV (columns `lon,lat,year`) the map is validated against real
+future sites, and without one it still renders the suitability map and skips validation.
 
 The per-country counts and ROC here use *all* inventory sites installed after the imagery
 year and so differ slightly from the paper's tables, which use a deduplicated,

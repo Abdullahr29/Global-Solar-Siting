@@ -59,10 +59,11 @@ def run_country(country, year=2019, min_install=None, n_rand=6000, max_sites=300
                  "(or pass --ee-project). See the README for one-time setup.")
     if min_install is None:
         min_install = year + 2
+    slug = country.lower().replace(" ", "_")
     if sites_csv is None:
-        sites_csv = f"data/sites_{country.lower()}.csv"
+        sites_csv = f"data/sites_{slug}.csv"
     os.makedirs("outputs", exist_ok=True)
-    out_prefix = f"outputs/{country.lower().replace(' ', '_')}_rf_{year}"
+    out_prefix = f"outputs/{slug}_rf_{year}"
 
     ee.Initialize(project=ee_project)
     bands = [f"A{i:02d}" for i in range(64)]
@@ -90,20 +91,30 @@ def run_country(country, year=2019, min_install=None, n_rand=6000, max_sites=300
     score = img.classify(clf).clip(geom).rename("score")
 
     # ---- validation sites: installed after the imagery, unseen by the map ----
-    if not os.path.exists(sites_csv):
-        sys.exit(f"no site file {sites_csv}. Bundled: data/sites_greece.csv, data/sites_germany.csv. "
-                 "Provide your own with --sites (columns: lon,lat,year).")
-    sdf = pd.read_csv(sites_csv)
-    sdf = sdf[sdf["year"] >= min_install]
-    if len(sdf) == 0:
-        sys.exit(f"no sites in {sites_csv} installed >= {min_install}")
-    site_xy = sdf[["lon", "lat"]].to_numpy(dtype=float)
-    if len(site_xy) > max_sites:
-        idx = np.random.default_rng(seed).choice(len(site_xy), max_sites, replace=False)
-        site_xy = site_xy[idx]
-        print(f"validation sites: {len(sdf):,} -> sampled {max_sites:,}", flush=True)
+    # A country CSV is optional: with one we validate the map against real future
+    # sites; without one we still render the suitability map and skip validation.
+    site_xy = np.empty((0, 2))
+    validate = os.path.exists(sites_csv)
+    if validate:
+        sdf = pd.read_csv(sites_csv)
+        sdf = sdf[sdf["year"] >= min_install]
+        if len(sdf) == 0:
+            print(f"note: no sites in {sites_csv} installed >= {min_install}; "
+                  "rendering the map without validation", flush=True)
+            validate = False
+        else:
+            site_xy = sdf[["lon", "lat"]].to_numpy(dtype=float)
+            if len(site_xy) > max_sites:
+                idx = np.random.default_rng(seed).choice(len(site_xy), max_sites, replace=False)
+                site_xy = site_xy[idx]
+                print(f"validation sites: {len(sdf):,} -> sampled {max_sites:,}", flush=True)
+            else:
+                print(f"validation sites (installed >= {min_install}): {len(site_xy):,}", flush=True)
     else:
-        print(f"validation sites (installed >= {min_install}): {len(site_xy):,}", flush=True)
+        print(f"no site file {sites_csv} (bundled site files cover the paper's 13 "
+              "validation countries; see data/); rendering the suitability map without "
+              "validation. Pass --sites (columns: lon,lat,year) to validate your own sites.",
+              flush=True)
 
     # ---- random land points (country-wide score distribution) ----
     shp = shape(geom.getInfo())
@@ -128,21 +139,25 @@ def run_country(country, year=2019, min_install=None, n_rand=6000, max_sites=300
         return np.array(out, dtype=float)
 
     t0 = time.time()
-    site_s = pts_scores(site_xy, "sites")
+    site_s = pts_scores(site_xy, "sites") if validate else np.empty(0)
     rand_s = pts_scores(rand_xy, "random")
     print(f"scored {len(site_s)} sites + {len(rand_s)} random ({time.time() - t0:.0f}s)", flush=True)
 
-    # ---- metrics ----
-    y = np.r_[np.ones(len(site_s)), np.zeros(len(rand_s))]
-    x = np.r_[site_s, rand_s]
-    pct = np.array([(rand_s < s).mean() for s in site_s])
-    roc, pr = roc_auc_score(y, x), average_precision_score(y, x)
-    print(f"\n=== {country} {year}: RF map vs sites installed >= {min_install} ===")
-    print(f"ROC-AUC {roc:.3f} | PR-AUC {pr:.3f} (chance {len(site_s) / len(x):.3f}) | "
-          f"median site percentile {np.median(pct) * 100:.1f}")
-    print(f"sites in top 20/10/5% of ranked land: "
-          f"{(pct >= 0.8).mean() * 100:.1f}% / {(pct >= 0.9).mean() * 100:.1f}% / "
-          f"{(pct >= 0.95).mean() * 100:.1f}%", flush=True)
+    # ---- metrics (only when validation sites are available) ----
+    roc = None
+    if validate:
+        y = np.r_[np.ones(len(site_s)), np.zeros(len(rand_s))]
+        x = np.r_[site_s, rand_s]
+        pct = np.array([(rand_s < s).mean() for s in site_s])
+        roc, pr = roc_auc_score(y, x), average_precision_score(y, x)
+        print(f"\n=== {country} {year}: RF map vs sites installed >= {min_install} ===")
+        print(f"ROC-AUC {roc:.3f} | PR-AUC {pr:.3f} (chance {len(site_s) / len(x):.3f}) | "
+              f"median site percentile {np.median(pct) * 100:.1f}")
+        print(f"sites in top 20/10/5% of ranked land: "
+              f"{(pct >= 0.8).mean() * 100:.1f}% / {(pct >= 0.9).mean() * 100:.1f}% / "
+              f"{(pct >= 0.95).mean() * 100:.1f}%", flush=True)
+    else:
+        print(f"\n=== {country} {year}: RF suitability map (no validation sites) ===", flush=True)
 
     # ---- save scores first (rendering can fail for huge countries) ----
     b = geom.bounds().coordinates().getInfo()[0]
@@ -173,16 +188,18 @@ def run_country(country, year=2019, min_install=None, n_rand=6000, max_sites=300
 
     fig, ax = plt.subplots(1, 2, figsize=(15, 7), gridspec_kw={"width_ratios": [1.5, 1]})
     ax[0].imshow(im, extent=ext, aspect="auto")
-    ax[0].scatter(site_xy[:, 0], site_xy[:, 1], s=4, c="cyan", alpha=0.6,
-                  label=f"sites installed >= {min_install} (n={len(site_xy):,})")
-    ax[0].legend(loc="lower right", fontsize=9)
+    if validate:
+        ax[0].scatter(site_xy[:, 0], site_xy[:, 1], s=4, c="cyan", alpha=0.6,
+                      label=f"sites installed >= {min_install} (n={len(site_xy):,})")
+        ax[0].legend(loc="lower right", fontsize=9)
     ax[0].set_title(f"{country} - RF suitability, AlphaEarth {year}")
     ax[1].hist(rand_s, bins=60, density=True, alpha=0.6, label=f"random {country} land")
-    ax[1].hist(site_s, bins=60, density=True, alpha=0.6, label="future solar sites")
+    if validate:
+        ax[1].hist(site_s, bins=60, density=True, alpha=0.6, label="future solar sites")
     ax[1].set_xlabel("RF P(solar)")
     ax[1].set_ylabel("density")
     ax[1].legend(fontsize=9)
-    ax[1].set_title(f"ROC-AUC {roc:.3f}")
+    ax[1].set_title(f"ROC-AUC {roc:.3f}" if validate else "country score distribution")
     fig.savefig(f"{out_prefix}_fig.png", dpi=110, bbox_inches="tight")
     plt.close(fig)
     print(f"saved {out_prefix}.png / _fig.png / _scores.npz", flush=True)
