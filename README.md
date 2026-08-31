@@ -3,14 +3,14 @@
 Reproduction code for the accompanying paper (under double-blind review). We learn
 solar-siting **suitability** directly from **AlphaEarth Foundations** 64-dimensional
 per-pixel geospatial embeddings: a random forest maps each pixel embedding to
-`P(solar)`, trained on land as it appeared two years *before* installation, so it
+`P(solar)`, trained on land as it appeared two years *before* installation and global non-solar land, so it
 captures the pre-existing landscape rather than the panels.
 
 > ⚠️ **Preliminary artifact for peer review.** This is a minimal, self-contained subset
 > of the code with a small data sample — enough to reproduce the paper's key results and
 > apply the model. **The full codebase and the final global 10 m suitability dataset will
 > be released upon acceptance of the paper.** Retraining from scratch needs the full
-> multi-terabyte AlphaEarth pixel corpus, released with the dataset at that time; the
+> multi-terabyte AlphaEarth pixel corpus; the
 > bundled pixel sample here reproduces the method *ranking*, not the exact full-scale
 > numbers.
 
@@ -116,7 +116,7 @@ country-balanced validation subset; the numbers are of the same magnitude.
   `X_neg_*` non-solar, each row a 64-d embedding. The test sample is class-balanced, so
   PR-AUC reads higher than the paper's (~1:5 imbalanced) pool; ROC-AUC is comparable.
 - **Site coordinates:** installation locations and years from a public global PV facility
-  inventory, used only to validate the maps.
+  inventory (https://zenodo.org/records/18794231), used only to validate the maps.
 
 ## License
 
