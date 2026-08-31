@@ -1,4 +1,5 @@
 outputs/
+models/rf_demo.joblib
 __pycache__/
 *.pyc
 .DS_Store

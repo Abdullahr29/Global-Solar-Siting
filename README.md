@@ -42,7 +42,9 @@ data/sites_<country>.csv    solar-site coordinates for validation (lon, lat, ins
                             bundled for the paper's 13 forward-validation countries
 quickstart.py               load the model, score the sample        (no Earth Engine)
 benchmark_extractors.py     the 8-method comparison of Table 1       (no Earth Engine)
+train_rf.py                 the training recipe: pool -> forest      (no Earth Engine)
 run_country.py              map + validate a whole country           (needs Earth Engine)
+EXPECTED_OUTPUT.md          what each script should print
 ```
 
 ## Setup
@@ -76,6 +78,23 @@ probe, QDA, MaxEnt, random Fourier features, random forest, histogram gradient b
 MLP) on the bundled sample and ranks them on the held-out sample, marking which admit
 native global-scale inference in Earth Engine. Reproduces the ranking of Table 1 and why
 the random forest is the deployed model.
+
+## Training recipe (reference) — `train_rf.py`
+
+`train_rf.py` documents the full method behind the released model: how the per-pixel
+training pool is built from AlphaEarth chips and solar masks (positives are the masked
+solar pixels, negatives the pixels of globally-random non-solar chips, each chip capped so
+no site dominates), and the exact forest recipe — 30 trees, `class_weight="balanced"`, with
+`min_samples_leaf` grown only until the serialised decision-tree strings fit under Earth
+Engine's size limit (what makes global inference possible). Pool extraction needs the full
+chip corpus (not shipped), but the training/eval stage runs on the bundled sample:
+
+```bash
+python train_rf.py            # trains the recipe on data/px_sample.npz, prints held-out ROC/PR
+```
+
+This is primarily a **readable reference**; the deployed weights are shipped in
+`models/rf30_v3_R.joblib`. Expected numbers for every script are in `EXPECTED_OUTPUT.md`.
 
 ## 3. Country-scale suitability map — needs Earth Engine
 
