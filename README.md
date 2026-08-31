@@ -98,7 +98,7 @@ validated against real sites installed after the imagery year.
 **Run:**
 ```bash
 python run_country.py Greece
-python run_country.py Spain --year 2019      # a specific year can be passed as an argument, model runs on AEF 2019, validation on 2021+
+python run_country.py Spain --year 2019      # year argument means model runs on AEF 2019, validation on 2021+
 python run_country.py Chile          # any country renders a map, validated where sites are bundled
 ```
 Validation site files are bundled for the paper's thirteen forward-validation countries —
