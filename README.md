@@ -48,7 +48,7 @@ Then get the released model (~2.1 GB; archived with the dataset):
 
 ```bash
 python scripts/download_model.py           # -> models/solar_suitability_model_v1.0/ (checksums verified)
-python scripts/quickstart.py               # ~30 s: checks the model, AEF access, and maps a small area
+python scripts/quickstart.py               # ~30 s: checks the model, AlphaEarth access, maps a small area
 ```
 
 ## Map any region and year
@@ -77,31 +77,44 @@ Runs are resumable: re-running the same command skips finished tiles. AEF years:
 `--region-file` for any other definition. Bounding boxes include the sea, which AEF partly covers near coasts;
 country runs are clipped to the country outline.
 
-**`--lite`** uses only the MLP half of the ensemble: about half the memory and somewhat faster, at a very small accuracy
+**`--lite`** uses only the MLP half of the ensemble: about a third of the memory and faster, at a very small accuracy
 cost (13-country forward ROC-AUC 0.918 vs 0.920; TZ-SAM 0.891 vs 0.891). Outputs are labelled as the lite variant.
 
 ### Requirements
 
-Measured on a 2024 laptop (Apple M4 Pro, 12 cores, 24 GB RAM, home broadband):
+Measured on a laptop (Apple M4 Pro, 12 cores, 24 GB RAM, home broadband), mapping 7,538 km² of northern Greece:
 
 | | Full model | `--lite` |
 |---|---|---|
-| RAM (peak) | ~9 GB (**16 GB machine recommended**) | ~3.5 GB |
-| Speed | ~0.5 M pixels/s, i.e. **~20 s per 1,000 km²** | similar or faster (download-bound) |
-| Examples | Athens area (300 km²): 20 s · W. Macedonia (7,500 km²): ~3 min · Greece (132,000 km²): ~45 min · Germany: ~2 h | |
-| Disk | model 2.1 GB · environment ~2 GB · **outputs ~8 MB per 1,000 km²** · tile index cache 80 MB | model 2 MB (MLP part) |
-| Network | ~0.4 GB of AEF data streamed per 1,000 km² (not stored) | same |
+| RAM (peak) | ~9 GB (**16 GB machine recommended**) | ~3.5 GB (8 GB machine is fine) |
+| Speed, default install | **~60 s per 1,000 km²** (7.5 min for 7,538 km²) | ~1.5x faster |
+| Speed, with a faster maths library ([below](#speed-up-the-maths-library)) | **~25 s per 1,000 km²** (3.2 min for 7,538 km²) | |
+| Disk | model 2.1 GB · environment ~2 GB · tile index cache 80 MB · **outputs ~8 MB per 1,000 km²** | model 2 MB (MLP part) |
+| Network | ~0.4 GB of AlphaEarth data streamed per 1,000 km² (read on the fly, not stored) | same |
 
-Large countries scale linearly (USA, China, Brazil: one to a few days on a laptop); for those, run regions in
-parallel or use the [released dataset](#use-the-released-dataset) for AEF 2025. Speed scales with cores and
-bandwidth. `--threads` sets CPU threads (default: all), `--io-threads` parallel downloads (default 8).
+Rough guide at the faster rate (the default install takes about 2.4x longer): a city region (1,000 km²) in under a
+minute; Greece (132,000 km²) ~1 hour; Germany (357,000 km²) ~2.5 hours; the USA, China or Brazil a few days (run
+regions in parallel on several machines, or use the [released dataset](#use-the-released-dataset) for AEF 2025).
+Speed also scales with cores and bandwidth. `--threads` sets CPU threads (default: all), `--io-threads` parallel
+downloads (default 8).
+
+#### Speed up the maths library
+
+Half of the model (the MLP) is matrix arithmetic, so its speed depends on the BLAS library NumPy uses. The default
+conda install uses OpenBLAS; switching is one command and changes results by at most ±1 code on ~1 pixel in a
+million:
+
+- **macOS (Apple Silicon or Intel):** `conda install -c conda-forge "libblas=*=*accelerate"` (Apple Accelerate;
+  ~2.4x faster overall on an M4 Pro).
+- **Linux / Windows on Intel or AMD:** `conda install -c conda-forge "libblas=*=*mkl"` (Intel MKL).
+
+The code measures both of its threading strategies on first use and keeps the faster one, so no settings are needed.
 
 ### Platform notes
 
 - **Windows:** use conda (`environment.yml`); GDAL from pip wheels works but is less predictable. All scripts guard
   `if __name__ == "__main__"`, as Windows requires for parallel work. Paths with spaces need quotes.
-- **macOS:** works out of the box. Optional speed-up on Apple Silicon: `conda install -c conda-forge "libblas=*=*accelerate"`
-  (Apple's Accelerate BLAS; ~1.5x faster MLP).
+- **macOS:** works out of the box; see [Speed up the maths library](#speed-up-the-maths-library) for a 2.4x speed-up.
 - **PyTorch** is needed only to *retrain* the MLP (`scripts/train.py`). On macOS install it from conda-forge
   (`conda install -c conda-forge pytorch`): the pip wheel bundles its own OpenMP runtime, which crashes alongside
   conda-forge's scikit-learn (`OMP: Error #15`).
@@ -132,7 +145,7 @@ The dataset's format, encoding, percentile layers, tile index, STAC catalogue an
 |---|---|---|
 | Method benchmark (Table 1) | `python scripts/benchmark.py` | ~15 s |
 | Retrain the ensemble (release recipe) | `python scripts/train.py --preset sample --out models/my_model` (needs PyTorch) | ~15 s |
-| Forward validation (Fig. 2b-style) | `python scripts/predict.py --country Greece --year 2019` then `python scripts/validate.py --run outputs/greece_2019 --sites data/validation/sites_greece.csv` | ~45 min + seconds |
+| Forward validation (Fig. 2b-style) | `python scripts/predict.py --country Greece --year 2019` then `python scripts/validate.py --run outputs/greece_2019 --sites data/validation/sites_greece.csv` | ~1 h (faster maths library) + seconds |
 | MCDA vs ensemble (Fig. 3 / Appendix H) | `python scripts/mcda_example.py` | ~10 s |
 
 [`docs/reproduce.md`](docs/reproduce.md) maps every table and figure to a script, lists what runs from the bundled

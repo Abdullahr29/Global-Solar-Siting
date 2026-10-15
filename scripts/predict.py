@@ -57,8 +57,8 @@ def main():
     if not os.path.isdir(a.model):
         sys.exit(f"model folder not found: {a.model}\n  download it first:  python scripts/download_model.py")
     out = a.out or os.path.join("outputs", f"{label}_{a.year}" + ("_lite" if a.lite else ""))
-    model = load_model(a.model, threads=a.threads, lite=a.lite)
-    infer.run(model, region, label, a.year, out, tiles=tiles, io_threads=a.io_threads)
+    loader = lambda: load_model(a.model, threads=a.threads, lite=a.lite)    # loaded only if a tile needs scoring
+    infer.run(loader, region, label, a.year, out, tiles=tiles, io_threads=a.io_threads)
 
 
 def _area_km2(geom):
@@ -68,4 +68,7 @@ def _area_km2(geom):
 
 
 if __name__ == "__main__":        # required on Windows/macOS, where worker threads/processes are spawned
-    main()
+    try:
+        main()
+    except (ValueError, FileNotFoundError) as e:     # input mistakes: a clear message, not a traceback
+        sys.exit(f"error: {e}")

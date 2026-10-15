@@ -186,4 +186,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except (ValueError, FileNotFoundError) as e:     # input mistakes: a clear message, not a traceback
+        sys.exit(f"error: {e}")

@@ -8,7 +8,7 @@ what in this repository reproduces it, and what it needs. Times are for a 12-cor
 | Fig. 1 pipeline; the global layer | `scripts/predict.py`, `scripts/get_dataset.py` | model; internet (AEF) | the released v1.0 map (AEF 2025) is reproduced pixel-for-pixel within ±1 code on ~1e-6 of pixels |
 | Table 1, method benchmark (pixel columns) | `scripts/benchmark.py` | bundled `px_sample.npz` | same ranking; values below |
 | Retraining the ensemble (Appendix B recipe) | `scripts/train.py` | bundled sample (or your pool); PyTorch | held-out ROC ~0.92 on the sample |
-| Fig. 2b, forward validation, Greece | `predict.py --country Greece --year 2019` + `validate.py` | model; internet; ~45 min | ROC-AUC ~0.89 expected (Table 3, inventory sites: 0.894) |
+| Fig. 2b, forward validation, Greece | `predict.py --country Greece --year 2019` + `validate.py` | model; internet; ~1 h | ROC-AUC ~0.89 expected (Table 3, inventory sites: 0.894) |
 | Table 3 / App. D, 13-country forward validation | the same for each country with `data/validation/sites_<country>.csv` | model; internet; hours to days for the largest countries | inventory columns of Table 3 |
 | Fig. 3, Table 5, App. H, MCDA comparison | `scripts/mcda_example.py` (Greece) | bundled `data/mcda_example/` | gap ~+0.24 ROC-AUC (paper Greece +0.233) |
 | App. E, within-country percentiles | `mosaic_*_pct.vrt` outputs; `docs/dataset.md` | — | ROC-AUC unchanged by the transform |

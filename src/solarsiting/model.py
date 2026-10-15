@@ -71,25 +71,40 @@ class SuitabilityModel:
         self.rf, self.mlps, self.w_rf = rf, list(mlps), float(w_rf)
         self.meta = meta or {}
         self.threads = 1
+        self._mlp_mode = None                     # "chunked" or "single": picked by timing on first use (see _mlp_mean)
 
     def set_threads(self, n):
         """Threads used by the random forest (the dominant cost). NumPy's BLAS uses its own thread settings."""
-        self.threads = max(1, int(n))
+        self.threads = max(1, int(n)); self._mlp_mode = None
         if self.rf is not None:
             self.rf.n_jobs = self.threads
         return self
 
     def _mlp_mean(self, X):
-        """Seed-averaged MLP probability, split into chunks across threads (each with single-threaded BLAS, so this
-        scales on every BLAS: OpenBLAS, MKL, Apple Accelerate). Output is bit-identical to the unchunked computation."""
+        """Seed-averaged MLP probability, computed in cache-sized chunks. Two strategies give bit-identical results:
+        "chunked" spreads chunks over threads with single-threaded BLAS (fast with MKL or Apple Accelerate);
+        "single" runs chunks in turn and lets the BLAS library thread internally (better with OpenBLAS, which
+        serialises calls from many threads). The faster one for this machine is picked once, by timing, on first use."""
         b = self.MLP_CHUNK
-        one = lambda i: np.mean([m.predict_p(X[i:i + b], batch=b) for m in self.mlps], axis=0)
+        one = lambda Z, i: np.mean([m.predict_p(Z[i:i + b], batch=b) for m in self.mlps], axis=0)
+
+        def single(Z):
+            return np.concatenate([one(Z, i) for i in range(0, len(Z), b)])
+
+        def chunked(Z):
+            from concurrent.futures import ThreadPoolExecutor
+            from threadpoolctl import threadpool_limits
+            with threadpool_limits(1), ThreadPoolExecutor(self.threads) as ex:
+                return np.concatenate(list(ex.map(lambda i: one(Z, i), range(0, len(Z), b))))
+
         if self.threads == 1 or len(X) <= b:
-            return np.concatenate([one(i) for i in range(0, len(X), b)])
-        from concurrent.futures import ThreadPoolExecutor
-        from threadpoolctl import threadpool_limits
-        with threadpool_limits(1, user_api="blas"), ThreadPoolExecutor(self.threads) as ex:
-            return np.concatenate(list(ex.map(one, range(0, len(X), b))))
+            return single(X)
+        if self._mlp_mode is None and len(X) >= 8 * b:
+            import time
+            probe = X[:8 * b]; t = time.perf_counter(); single(probe); ts = time.perf_counter() - t
+            t = time.perf_counter(); chunked(probe); tc = time.perf_counter() - t
+            self._mlp_mode = "chunked" if tc < ts else "single"
+        return chunked(X) if self._mlp_mode == "chunked" else single(X)
 
     def predict(self, X):
         X = np.asarray(X, np.float32)

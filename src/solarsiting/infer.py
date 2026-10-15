@@ -211,6 +211,10 @@ def run(model, region, label, year, out_dir, tiles=None, io_threads=8, log=print
     log(f"{label} {year}: {len(T)} AEF tile(s) to process")
     rows, t0 = [], time.time()
     for k, row in enumerate(T.itertuples(), 1):
+        if callable(model) and not hasattr(model, "predict"):       # lazy loader: load only when a tile needs scoring
+            done = os.path.exists(os.path.join(out_dir, "tiles", row.utm_zone, f"{label}_{year}_{aef.tile_id(row.path)}.tif"))
+            if not done:
+                model = model()
         st = predict_tile(model, row, region, label, year, out_dir, io_threads=io_threads)
         rows.append(st)
         msg = "already done" if st.get("skipped") else (f"{st.get('n_valid', 0)/1e6:.1f} M px in {st.get('sec', 0):.0f}s"
@@ -237,7 +241,8 @@ def run(model, region, label, year, out_dir, tiles=None, io_threads=8, log=print
         _vrt(fs, os.path.join(out_dir, f"mosaic_{zone}.vrt"))
         _vrt(fs, os.path.join(out_dir, f"mosaic_{zone}_pct.vrt"), pct_lut=pct)
     _quicklook(files, region, os.path.join(out_dir, "quicklook.png"))
-    info = dict(region=label, aef_year=int(year), model=model.meta.get("name", ""), tiles=len(T),
+    name = model.meta.get("name", "") if hasattr(model, "meta") else "(all tiles already present)"
+    info = dict(region=label, aef_year=int(year), model=name, tiles=len(T),
                 pixels_scored=int(hist.sum()), area_km2=round(hist.sum() * 1e-4, 1),
                 minutes=round((time.time() - t0) / 60, 1), tile_stats=[{k: v for k, v in r.items() if k != "hist"} for r in rows])
     json.dump(info, open(os.path.join(out_dir, "run.json"), "w"), indent=1)
