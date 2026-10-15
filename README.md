@@ -77,7 +77,7 @@ Runs are resumable: re-running the same command skips finished tiles. AEF years:
 `--region-file` for any other definition. Bounding boxes include the sea, which AEF partly covers near coasts;
 country runs are clipped to the country outline.
 
-**`--lite`** uses only the MLP half of the ensemble: about a third of the memory and faster, at a very small accuracy
+**`--lite`** uses only the MLP half of the ensemble: under half the memory (~3.5 vs ~9 GB) and faster, at a very small accuracy
 cost (13-country forward ROC-AUC 0.918 vs 0.920; TZ-SAM 0.891 vs 0.891). Outputs are labelled as the lite variant.
 
 ### Requirements
