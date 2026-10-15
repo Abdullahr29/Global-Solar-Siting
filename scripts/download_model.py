@@ -25,7 +25,9 @@ def fetch(src, dst):
     if os.path.isdir(os.path.dirname(src)) or os.path.exists(src):          # local folder (e.g. a mounted archive)
         shutil.copyfile(src, dst + ".part"); os.replace(dst + ".part", dst); return
     part = dst + ".part"; have = os.path.getsize(part) if os.path.exists(part) else 0
-    req = urllib.request.Request(src, headers={"Range": f"bytes={have}-"} if have else {})
+    from solarsiting.aef import USER_AGENT
+    hdr = {"User-Agent": USER_AGENT, **({"Range": f"bytes={have}-"} if have else {})}
+    req = urllib.request.Request(src, headers=hdr)
     with urllib.request.urlopen(req, timeout=300) as r:
         total = have + int(r.headers.get("Content-Length", 0))
         mode = "ab" if (have and r.status == 206) else "wb"

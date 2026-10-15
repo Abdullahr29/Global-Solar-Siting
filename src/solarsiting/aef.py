@@ -35,15 +35,19 @@ def gdal_env():
     for k, v in dict(GDAL_HTTP_MULTIRANGE="PARALLEL", GDAL_NUM_THREADS="ALL_CPUS",
                      GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR", CPL_VSIL_CURL_ALLOWED_EXTENSIONS=".tiff,.tif",
                      GDAL_HTTP_MERGE_CONSECUTIVE_RANGES="YES", GDAL_HTTP_MULTIPLEX="YES", GDAL_HTTP_VERSION="2",
-                     GDAL_HTTP_MAX_RETRY="8", GDAL_HTTP_RETRY_DELAY="2", VSI_CACHE="TRUE", VSI_CACHE_SIZE="33554432",
+                     GDAL_HTTP_MAX_RETRY="8", GDAL_HTTP_RETRY_DELAY="2", GDAL_HTTP_USERAGENT=USER_AGENT, VSI_CACHE="TRUE", VSI_CACHE_SIZE="33554432",
                      GDAL_CACHEMAX="128").items():
         os.environ.setdefault(k, v)
+
+
+USER_AGENT = "solarsiting/1.0 (+https://github.com/Abdullahr29/Global-Solar-Siting)"   # some hosts reject Python's default
 
 
 def _download(url, dst):
     import urllib.request
     tmp = dst + ".part"
-    with urllib.request.urlopen(url, timeout=300) as r, open(tmp, "wb") as f:
+    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    with urllib.request.urlopen(req, timeout=300) as r, open(tmp, "wb") as f:
         while True:
             b = r.read(1 << 22)
             if not b:
