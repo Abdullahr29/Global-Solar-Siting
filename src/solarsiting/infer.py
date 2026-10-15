@@ -65,6 +65,22 @@ def _file_blocks(H, W, flip, win):
     return out
 
 
+def _overview(path, f, tries=6):
+    """Band 1 of a remote tile at 1/f resolution, on a fresh connection per attempt (survives dropped connections)."""
+    for k in range(tries):
+        src = None
+        try:
+            src = aef.open_tile(path)
+            return src.read(1, out_shape=(-(-src.height // f), -(-src.width // f)))
+        except Exception:
+            if k == tries - 1:
+                raise
+            time.sleep(min(60, 2 ** (k + 1)))
+        finally:
+            if src is not None:
+                src.close()
+
+
 def predict_tile(model, row, region, label, year, out_dir, io_threads=8):
     """Score one AEF tile over the part of `region` it covers. Returns a stats dict (skips if already written)."""
     import threading
@@ -92,24 +108,37 @@ def predict_tile(model, row, region, label, year, out_dir, io_threads=8):
     inside = rasterize([(reg, 1)], out_shape=(h, w), transform=wtr, fill=0, all_touched=True, dtype="uint8").astype(bool)
 
     # Which blocks hold AEF data at all: one cheap read of band 1 from a 1/16 overview (no data is -128 in every band).
+    src.close()
     f = 16
-    ov = src.read(1, out_shape=(-(-H // f), -(-W // f)))
+    ov = _overview(row.path, f)
     if flip:
         ov = ov[::-1]
     has = ov != aef.QNODATA
-    src.close()
     blocks = [b for b in _file_blocks(H, W, flip, win)
               if inside[b[0] - r0:b[1] - r0, b[2] - c0:b[3] - c0].any() and has[b[0] // f:-(-b[1] // f), b[2] // f:-(-b[3] // f)].any()]
 
     local, handles = threading.local(), []
 
-    def read(b):                                       # one north-up block as (64, bh, bw) int8; own connection per thread
-        if not hasattr(local, "src"):
-            local.src = aef.open_tile(row.path); handles.append(local.src)
+    def read(b, tries=6):                              # one north-up block as (64, bh, bw) int8; own connection per thread
         a0, a1, b0, b1 = b
         frow = (H - a1) if flip else a0                # bottom-up file: north-up row r is file row H-1-r
-        a = local.src.read(window=Window(b0, frow, b1 - b0, a1 - a0))
-        return a[:, ::-1, :] if flip else a
+        for k in range(tries):
+            try:
+                if not hasattr(local, "src"):
+                    local.src = aef.open_tile(row.path); handles.append(local.src)
+                a = local.src.read(window=Window(b0, frow, b1 - b0, a1 - a0))
+                return a[:, ::-1, :] if flip else a
+            except Exception:                          # dropped connection / truncated range: fresh connection, back off
+                if k == tries - 1:
+                    raise
+                src = getattr(local, "src", None)
+                if src is not None:                    # the open itself may have failed
+                    try:
+                        src.close()
+                    except Exception:
+                        pass
+                    del local.src
+                time.sleep(min(60, 2 ** (k + 1)))
 
     codes = np.full((h, w), NODATA, np.uint8)
     n_valid = 0
