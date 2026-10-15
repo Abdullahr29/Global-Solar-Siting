@@ -1,20 +1,24 @@
-# Conda environment for the reproduction code.
+# Conda environment (Linux, macOS incl. Apple Silicon, Windows). conda-forge supplies GDAL/PROJ consistently on every OS.
 #   conda env create -f environment.yml
-#   conda activate solar-suitability
-name: solar-suitability
+#   conda activate global-solar-siting
+name: global-solar-siting
 channels:
   - conda-forge
 dependencies:
   - python=3.11
-  - numpy
-  - scikit-learn=1.8.0   # match the version the bundled model was trained with
-  - pandas
-  - matplotlib
-  - pillow
-  - requests
-  - shapely
-  - joblib
+  - numpy>=1.26
+  - scikit-learn=1.8.0      # must match: the released random forest was pickled with scikit-learn 1.8.0
+  - joblib>=1.4
+  - threadpoolctl>=3.1
+  - pandas>=2.1
+  - pyarrow>=14             # reads the AlphaEarth tile index (GeoParquet)
+  - rasterio>=1.4           # GDAL >= 3.8 (remote COG reads)
+  - geopandas>=1.0
+  - pyogrio>=0.7
+  - shapely>=2.0
+  - pyproj>=3.6
+  - scipy>=1.11
+  - matplotlib>=3.8
   - pip
   - pip:
-      - earthengine-api
-      - geemap
+      - -e .                # installs the `solarsiting` package from src/ (editable)

@@ -1,10 +1,15 @@
-numpy
+# pip alternative to environment.yml:  pip install -r requirements.txt && pip install -e .
+# On Windows prefer conda (environment.yml): pip wheels for rasterio/geopandas work, but conda-forge is more reliable.
+numpy>=1.26
 scikit-learn==1.8.0
-joblib
-pandas
-matplotlib
-pillow
-requests
-shapely
-earthengine-api
-geemap
+joblib>=1.4
+threadpoolctl>=3.1
+pandas>=2.1
+pyarrow>=14
+rasterio>=1.4
+geopandas>=1.0
+pyogrio>=0.7
+shapely>=2.0
+pyproj>=3.6
+scipy>=1.11
+matplotlib>=3.8

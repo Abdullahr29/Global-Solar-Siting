@@ -1,154 +1,175 @@
-# Global solar siting from geospatial embeddings
+# Global Solar Siting from Geospatial Embeddings
 
-Reproduction code for the accompanying paper (under double-blind review). We learn
-solar-siting **suitability** directly from **AlphaEarth Foundations** 64-dimensional
-per-pixel geospatial embeddings: a random forest maps each pixel embedding to
-`P(solar)`, trained on land as it appeared two years *before* installation and global non-solar land, so it
-captures the pre-existing landscape rather than the panels.
+Code, model and data access for **a global 10 m map of solar PV siting suitability**, learnt from where solar has
+actually been built. A random forest + MLP ensemble reads each 10 m pixel's
+[AlphaEarth Foundations](https://deepmind.google/discover/blog/alphaearth-foundations-helps-map-our-planet-in-unprecedented-detail/)
+(AEF) embedding (64 numbers summarising a year of satellite observations) and predicts `P(solar)`: how much the land
+resembles land that later became a solar farm, two years before construction.
 
-![Global solar-suitability preview](figures/global_suitability_map.png)
+> 📦 **Dataset — solar_suitability v1.0 (global, 10 m, AEF 2025): DOI coming soon** (CEDA archive; link added here at release)<br>
+> 📄 **Paper:** Rehman, Paletta & Song, *Global Solar Siting from Geospatial Embeddings*, Tackling Climate Change with
+> Machine Learning workshop, NeurIPS 2026 — link coming soon ([citation](#citation))
 
-*Global suitability from the deployed random forest applied to the AlphaEarth 2025 mosaic (100 m preview; brighter = higher predicted P(solar)). A downsampled placeholder for the full 10 m dataset released on acceptance.*
+![Global solar suitability](figures/global_suitability_map.png)
 
-> ⚠️ **Preliminary artifact for peer review.** This is a minimal, self-contained subset
-> of the code with a small data sample — enough to reproduce the paper's key results and
-> apply the model. **The full codebase and the final global 10 m suitability dataset will
-> be released upon acceptance of the paper.** Retraining from scratch needs the full
-> multi-terabyte AlphaEarth pixel corpus; the
-> bundled pixel sample here reproduces the method *ranking*, not the exact full-scale
-> numbers.
+*Global suitability (AEF 2025); brighter = more suitable. Preview of the 10 m dataset.*
 
-## How it works
+**What you can do with this repository**
 
-- **Input.** Each land pixel is a 64-d AlphaEarth annual embedding — a dense vector that
-  fuses spatial, spectral, and temporal Earth-observation signals into one global,
-  per-pixel representation.
-- **Model.** A random forest is trained to separate embeddings of *solar* land (real
-  sites, sampled two years before installation) from *non-solar* land (globally-random
-  parcels), outputting a per-pixel suitability score `P(solar)`.
-- **Global inference.** The trained forest is injected into Google Earth Engine as
-  decision-tree strings, so it can score an entire country's (or the world's) AlphaEarth
-  mosaic server-side, with no imagery download.
-- **Validation.** Maps are checked against real solar sites installed *after* the imagery
-  year — genuinely future sites the model never saw — plus random land for the score
-  distribution.
+| | | |
+|---|---|---|
+| **Map any region, any year** | country, bounding box or your own polygon; AEF 2017 onwards; runs on a laptop, no Earth Engine | [`scripts/predict.py`](#map-any-region-and-year) |
+| **Use the released dataset** | download a country or area of the global map, as raw scores or within-country percentiles | [`scripts/get_dataset.py`](#use-the-released-dataset) |
+| **Validate a map** | score solar sites built after the map's year against random land | [`scripts/validate.py`](#reproduce-the-paper) |
+| **Reproduce the paper** | method benchmark (Table 1), forward validation, MCDA comparison, retraining | [`docs/reproduce.md`](docs/reproduce.md) |
 
-## Contents
+Headline results (paper): validated on solar built *after* the imagery in 13 countries, the ensemble separates
+future solar sites from random land with a median ROC-AUC of 0.90, places 66 % of sites in the most-suitable 10 % of
+land, and beats published multi-criteria (MCDA) siting by 0.06-0.30 ROC-AUC in every country.
 
-```
-models/rf30_v3_R.joblib     the deployed random forest (30 trees, ~7 MB)
-data/px_sample.npz          AlphaEarth pixel sample at the paper's ~1:5 prevalence
-                            (12k/60k train, 10k/50k test, solar/non-solar)
-data/sites_<country>.csv    solar-site coordinates for validation (lon, lat, install year);
-                            bundled for the paper's 13 forward-validation countries
-quickstart.py               load the model, score the sample        (no Earth Engine)
-benchmark_extractors.py     the 8-method comparison of Table 1       (no Earth Engine)
-train_rf.py                 the training recipe: pool -> forest      (no Earth Engine)
-run_country.py              map + validate a whole country           (needs Earth Engine)
-EXPECTED_OUTPUT.md          what each script should print
-```
+---
 
-## Setup
+## Install
 
-**Conda (recommended):**
-```bash
-conda env create -f environment.yml
-conda activate solar-suitability
-```
-
-**Or pip:**
-```bash
-pip install -r requirements.txt
-```
-
-## 1. Quick check — no setup (seconds)
+Works on Linux, macOS (Intel and Apple Silicon) and Windows. CPU only, no GPU needed.
 
 ```bash
-python quickstart.py
+git clone https://github.com/Abdullahr29/Global-Solar-Siting.git
+cd Global-Solar-Siting
+conda env create -f environment.yml        # Miniconda / Miniforge: https://conda-forge.org/download/
+conda activate global-solar-siting
 ```
-Loads `rf30_v3_R.joblib`, scores the held-out pixel sample, and prints ROC-AUC / PR-AUC —
-a one-command confirmation the model works.
 
-## 2. Extraction-method benchmark — no setup (about a minute)
+`environment.yml` installs everything from conda-forge (consistent GDAL/PROJ on every OS) and the `solarsiting`
+package from `src/`. Without conda: `pip install -r requirements.txt && pip install -e .` (on Windows, prefer conda;
+see [platform notes](#platform-notes)).
+
+Then get the released model (~2.1 GB; archived with the dataset):
 
 ```bash
-python benchmark_extractors.py
+python scripts/download_model.py           # -> models/solar_suitability_model_v1.0/ (checksums verified)
+python scripts/quickstart.py               # ~30 s: checks the model, AEF access, and maps a small area
 ```
-Trains the eight extractors compared in the paper (mean-embedding prototype, logistic
-probe, QDA, MaxEnt, random Fourier features, random forest, histogram gradient boosting,
-MLP) on the bundled sample and ranks them on the held-out sample, marking which admit
-native global-scale inference in Earth Engine. Reproduces the ranking of Table 1 and why
-the random forest is the deployed model.
 
-## Training recipe (reference) — `train_rf.py`
-
-`train_rf.py` documents the full method behind the released model: how the per-pixel
-training pool is built from AlphaEarth chips and solar masks (positives are the masked
-solar pixels, negatives the pixels of globally-random non-solar chips, each chip capped so
-no site dominates), and the exact forest recipe — 30 trees, `class_weight="balanced"`, with
-`min_samples_leaf` grown only until the serialised decision-tree strings fit under Earth
-Engine's size limit (what makes global inference possible). Pool extraction needs the full
-chip corpus (not shipped), but the training/eval stage runs on the bundled sample:
+## Map any region and year
 
 ```bash
-python train_rf.py            # trains the recipe on data/px_sample.npz, prints held-out ROC/PR
+python scripts/predict.py --country Kenya --year 2024
+python scripts/predict.py --country GRC --year 2019 --out outputs/greece_2019        # name or ISO3 code
+python scripts/predict.py --bbox 23.5 37.8 24.2 38.2 --year 2025                     # west south east north
+python scripts/predict.py --region-file my_area.geojson --year 2022                  # any vector file
+python scripts/predict.py --country Malta --year 2025 --lite                         # low-memory variant
 ```
 
-This is primarily a **readable reference**; the deployed weights are shipped in
-`models/rf30_v3_R.joblib`. Expected numbers for every script are in `EXPECTED_OUTPUT.md`.
+The script finds the AEF tiles covering the region for that year (from the public tile index), **streams only the
+pixels it needs** over HTTPS (Google Cloud public bucket; nothing to sign up for), scores every 10 m pixel inside the
+region, and writes to `outputs/<region>_<year>/`:
 
-## 3. Country-scale suitability map — needs Earth Engine
+| Output | |
+|---|---|
+| `tiles/<utm_zone>/*.tif` | Cloud-Optimised GeoTIFFs in the tile's native UTM projection, 10 m, uint8: **P(solar) = value × 0.004**, 255 = no data (same encoding as the dataset; the scale is stored in the file) |
+| `mosaic_<zone>.vrt` | one virtual mosaic per UTM zone: open directly in QGIS, ArcGIS, rasterio, GDAL |
+| `mosaic_<zone>_pct.vrt` | the same as **within-region percentiles** (0-100: the share of the region's land each pixel outscores) |
+| `percentiles.csv`, `quicklook.png`, `run.json` | lookup table, a lon/lat preview, and run metadata |
 
-The random forest is applied to a country's AlphaEarth mosaic entirely server-side, then
-validated against real sites installed after the imagery year.
+Runs are resumable: re-running the same command skips finished tiles. AEF years: 2017-2025 at the time of writing
+(`--refresh-index` picks up newly published years). Countries are matched against Natural Earth boundaries; use
+`--region-file` for any other definition. Bounding boxes include the sea, which AEF partly covers near coasts;
+country runs are clipped to the country outline.
 
-**One-time Earth Engine setup (free):**
-1. Sign up for Google Earth Engine and create/register a Google Cloud project with the
-   Earth Engine API enabled — see https://earthengine.google.com and
-   https://developers.google.com/earth-engine/guides/access .
-2. Authenticate once:
-   ```bash
-   earthengine authenticate
-   ```
-3. Point the scripts at your project:
-   ```bash
-   export EE_PROJECT=your-earthengine-project-id
-   ```
+**`--lite`** uses only the MLP half of the ensemble: about half the memory and somewhat faster, at a very small accuracy
+cost (13-country forward ROC-AUC 0.918 vs 0.920; TZ-SAM 0.891 vs 0.891). Outputs are labelled as the lite variant.
 
-**Run:**
+### Requirements
+
+Measured on a 2024 laptop (Apple M4 Pro, 12 cores, 24 GB RAM, home broadband):
+
+| | Full model | `--lite` |
+|---|---|---|
+| RAM (peak) | ~9 GB (**16 GB machine recommended**) | ~3.5 GB |
+| Speed | ~0.5 M pixels/s, i.e. **~20 s per 1,000 km²** | similar or faster (download-bound) |
+| Examples | Athens area (300 km²): 20 s · W. Macedonia (7,500 km²): ~3 min · Greece (132,000 km²): ~45 min · Germany: ~2 h | |
+| Disk | model 2.1 GB · environment ~2 GB · **outputs ~8 MB per 1,000 km²** · tile index cache 80 MB | model 2 MB (MLP part) |
+| Network | ~0.4 GB of AEF data streamed per 1,000 km² (not stored) | same |
+
+Large countries scale linearly (USA, China, Brazil: one to a few days on a laptop); for those, run regions in
+parallel or use the [released dataset](#use-the-released-dataset) for AEF 2025. Speed scales with cores and
+bandwidth. `--threads` sets CPU threads (default: all), `--io-threads` parallel downloads (default 8).
+
+### Platform notes
+
+- **Windows:** use conda (`environment.yml`); GDAL from pip wheels works but is less predictable. All scripts guard
+  `if __name__ == "__main__"`, as Windows requires for parallel work. Paths with spaces need quotes.
+- **macOS:** works out of the box. Optional speed-up on Apple Silicon: `conda install -c conda-forge "libblas=*=*accelerate"`
+  (Apple's Accelerate BLAS; ~1.5x faster MLP).
+- **PyTorch** is needed only to *retrain* the MLP (`scripts/train.py`). On macOS install it from conda-forge
+  (`conda install -c conda-forge pytorch`): the pip wheel bundles its own OpenMP runtime, which crashes alongside
+  conda-forge's scikit-learn (`OMP: Error #15`).
+- **Reproducibility:** results match the released dataset to within ±1 code (±0.004) on about one pixel in a million;
+  the residual comes from floating-point summation order in different CPUs / maths libraries.
+- **Behind a firewall / proxy:** the scripts need HTTPS access to `storage.googleapis.com` (AEF tiles),
+  `data.source.coop` (tile index) and `naciscdn.org` (country outlines, first use only). GDAL honours
+  `HTTPS_PROXY`.
+
+## Use the released dataset
+
+The global map for **AEF 2025** (solar_suitability v1.0, ~850 GB, 28,000+ tiles, native UTM 10 m) is archived at CEDA
+(**DOI coming soon**). You do not need to download all of it:
+
 ```bash
-python run_country.py Greece
-python run_country.py Spain --year 2019      # year argument means model runs on AEF 2019, validation on 2021+
-python run_country.py Chile          # any country renders a map, validated where sites are bundled
+python scripts/get_dataset.py --country Kenya                    # raw scores for one country
+python scripts/get_dataset.py --country KEN --percentile         # + within-country percentile view
+python scripts/get_dataset.py --bbox 23.5 37.8 24.2 38.2         # any area
+python scripts/get_dataset.py --country Chile --whole-tiles       # full tiles instead of a clipped cut-out
 ```
-Validation site files are bundled for the paper's thirteen forward-validation countries —
-Chile, Colombia, Japan, Greece, Philippines, United States, China, Spain, South Africa,
-Malaysia, Germany, India and Poland — so those produce the validated site-vs-random figure
-out of the box; any other country still renders its suitability map (validation skipped).
 
-Outputs land in `outputs/`: a national suitability heatmap (`.png`), a
-site-vs-random-land score distribution (`_fig.png`), and the raw scores (`_scores.npz`).
-The country name must match the public `USDOS/LSIB_SIMPLE/2017` boundary table; both
-AlphaEarth (`GOOGLE/SATELLITE_EMBEDDING/V1/ANNUAL`) and the boundaries are public Earth
-Engine assets, so no extra data is needed. Any country in the boundary table works: with
-a bundled or `--sites` CSV (columns `lon,lat,year`) the map is validated against real
-future sites, and without one it still renders the suitability map and skips validation.
+The dataset's format, encoding, percentile layers, tile index, STAC catalogue and known caveats are described in
+[`docs/dataset.md`](docs/dataset.md).
 
-## Data provenance
+## Reproduce the paper
 
-- **Model:** a random forest trained on 64-d AlphaEarth annual embeddings of existing
-  solar sites (sampled two years before installation) versus globally-random non-solar land.
-- **Pixel sample (`data/px_sample.npz`):** subsamples of the training and held-out
-  evaluation pools of AlphaEarth pixel embeddings, drawn at the paper's ~1:5
-  solar:non-solar prevalence; `X_sol_*` are solar pixels, `X_neg_*` non-solar, each row a
-  64-d embedding. Because the prevalence matches the paper, both ROC-AUC and PR-AUC
-  reproduce Table 1 to within subsample noise. (ROC-AUC is prevalence-invariant; PR-AUC is
-  not — its value is only meaningful at a stated prevalence, which is why the sample keeps
-  the paper's.)
-- **Site coordinates:** installation locations and years from a public global PV facility
-  inventory (https://zenodo.org/records/18794231), used only to validate the maps.
+| | Command | Time (laptop) |
+|---|---|---|
+| Method benchmark (Table 1) | `python scripts/benchmark.py` | ~15 s |
+| Retrain the ensemble (release recipe) | `python scripts/train.py --preset sample --out models/my_model` (needs PyTorch) | ~15 s |
+| Forward validation (Fig. 2b-style) | `python scripts/predict.py --country Greece --year 2019` then `python scripts/validate.py --run outputs/greece_2019 --sites data/validation/sites_greece.csv` | ~45 min + seconds |
+| MCDA vs ensemble (Fig. 3 / Appendix H) | `python scripts/mcda_example.py` | ~10 s |
 
-## License
+[`docs/reproduce.md`](docs/reproduce.md) maps every table and figure to a script, lists what runs from the bundled
+data and what needs external downloads, and gives the expected outputs. Bundled data
+([`data/README.md`](data/README.md)): a held-out pixel sample of AEF embeddings, solar-site validation points for the
+paper's 13 countries, and a ~1 km MCDA example for Greece.
 
-Code: MIT (see `LICENSE`). The AlphaEarth embeddings and the site inventory are governed
-by their respective providers' terms.
+## Repository layout
+
+```
+scripts/          predict · get_dataset · validate · quickstart · benchmark · train · mcda_example · download_model
+src/solarsiting/  model (ensemble, encoding) · aef (AlphaEarth access) · infer (region inference) · regions
+data/             px_sample.npz · validation/sites_<country>.csv · mcda_example/ · README.md (sources, licences)
+docs/             dataset.md · methods.md · model_card.md · data_sources.md · reproduce.md
+```
+
+## Citation
+
+If you use the code, model or dataset, please cite the paper (and the dataset DOI once available):
+
+```bibtex
+@inproceedings{rehman2026globalsolar,
+  title     = {Global Solar Siting from Geospatial Embeddings},
+  author    = {Rehman, Abdullah and Paletta, Quentin and Song, Rui},
+  booktitle = {Tackling Climate Change with Machine Learning workshop at NeurIPS 2026},
+  year      = {2026}
+}
+```
+
+GitHub's "Cite this repository" button reads [`CITATION.cff`](CITATION.cff). Please also acknowledge the AlphaEarth
+Foundations embeddings: *"The AlphaEarth Foundations Satellite Embedding dataset is produced by Google and Google
+DeepMind."*
+
+## Licence and acknowledgements
+
+Code: MIT ([`LICENSE`](LICENSE)). Model and dataset: CC BY 4.0. Bundled third-party data keep their own licences
+(see [`data/README.md`](data/README.md)).
+
+This work was funded by the European Space Agency (ESA) Dragon Cooperation Programme (project FUCEO, funding ID 95452)
+and used JASMIN, the UK's collaborative data analysis environment. Contact: abdullah.rehman@kcl.ac.uk.

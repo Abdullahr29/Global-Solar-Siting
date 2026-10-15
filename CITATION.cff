@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+message: "If you use this code, model or dataset, please cite the paper below (and the dataset DOI once available)."
+title: "Global Solar Siting from Geospatial Embeddings: code, model and data access"
+version: 1.0.0
+date-released: 2026-10-15
+license: MIT
+repository-code: "https://github.com/Abdullahr29/Global-Solar-Siting"
+authors:
+  - family-names: Rehman
+    given-names: Abdullah
+    affiliation: "King's College London; University of Oxford"
+  - family-names: Paletta
+    given-names: Quentin
+    affiliation: "European Space Agency"
+  - family-names: Song
+    given-names: Rui
+    affiliation: "University of Oxford"
+keywords: [solar energy, site suitability, geospatial embeddings, AlphaEarth Foundations, remote sensing, climate change]
+preferred-citation:
+  type: conference-paper
+  title: "Global Solar Siting from Geospatial Embeddings"
+  authors:
+    - family-names: Rehman
+      given-names: Abdullah
+    - family-names: Paletta
+      given-names: Quentin
+    - family-names: Song
+      given-names: Rui
+  collection-title: "Tackling Climate Change with Machine Learning workshop at NeurIPS 2026"
+  year: 2026

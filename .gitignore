@@ -1,6 +1,14 @@
+# run outputs and downloaded models (large; never committed)
 outputs/
-models/rf_demo.joblib
+models/
+*.part
+*.part.tif
+# Python / OS / editors
 __pycache__/
 *.pyc
+*.egg-info/
+build/
 .DS_Store
 .ipynb_checkpoints/
+.vscode/
+.idea/
