@@ -93,7 +93,7 @@ Measured on a laptop (Apple M4 Pro, 12 cores, 24 GB RAM, home broadband), mappin
 | Network | ~0.4 GB of AlphaEarth data streamed per 1,000 km² (read on the fly, not stored) | same |
 
 Rough guide at the faster rate (the default install takes about 2.4x longer): a city region (1,000 km²) in under a
-minute; Greece (132,000 km²) ~1 hour; Germany (357,000 km²) ~2.5 hours; the USA, China or Brazil a few days (run
+minute; Greece (131,000 km²) 46 min (measured); Germany (357,000 km²) ~2.5 hours; the USA, China or Brazil a few days (run
 regions in parallel on several machines, or use the [released dataset](#use-the-released-dataset) for AEF 2025).
 Speed also scales with cores and bandwidth. `--threads` sets CPU threads (default: all), `--io-threads` parallel
 downloads (default 8).
@@ -145,7 +145,7 @@ The dataset's format, encoding, percentile layers, tile index, STAC catalogue an
 |---|---|---|
 | Method benchmark (Table 1) | `python scripts/benchmark.py` | ~15 s |
 | Retrain the ensemble (release recipe) | `python scripts/train.py --preset sample --out models/my_model` (needs PyTorch) | ~15 s |
-| Forward validation (Fig. 2b-style) | `python scripts/predict.py --country Greece --year 2019` then `python scripts/validate.py --run outputs/greece_2019 --sites data/validation/sites_greece.csv` | ~1 h (faster maths library) + seconds |
+| Forward validation (Fig. 2b protocol; the released model has seen the bundled sites, [see why](docs/reproduce.md#forward-validation-predictpy--validatepy)) | `python scripts/predict.py --country Greece --year 2019` then `python scripts/validate.py --run outputs/greece_2019 --sites data/validation/sites_greece.csv` | ~45 min (faster maths library) + seconds |
 | MCDA vs ensemble (Fig. 3 / Appendix H) | `python scripts/mcda_example.py` | ~10 s |
 
 [`docs/reproduce.md`](docs/reproduce.md) maps every table and figure to a script, lists what runs from the bundled

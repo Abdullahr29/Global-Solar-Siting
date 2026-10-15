@@ -26,6 +26,12 @@ One row per facility in the inventory for that country (the inventory's own `lon
 fields, years 2017-2024). Use rows with `year >= map year + 2` for forward validation (as `scripts/validate.py`
 does by default).
 
+Column `paper_split` records whether the site lies inside a chip of the paper's training split (`train`), only inside
+test-split chips (`test`), or in no chip (`unseen`), by the paper's leakage rule (site within ±1.3 km of a chip
+centre). The paper's held-out evaluations use `test` + `unseen`; the released all-data model was trained on both the
+`train` and `test` chips, so these files measure its fit to known solar rather than forward skill (see
+[`docs/reproduce.md`](../docs/reproduce.md#forward-validation-predictpy--validatepy)).
+
 **Source:** the Global PV Facility (GPVF) inventory — Song, R., Yin, F., et al. *Global Facility-Level Solar
 Photovoltaic Inventory with Energy Generation and Loss Estimates* (2026), Zenodo,
 [doi:10.5281/zenodo.18794231](https://doi.org/10.5281/zenodo.18794231). Licence: **CC BY 4.0**. Only the three

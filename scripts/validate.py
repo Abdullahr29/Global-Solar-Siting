@@ -10,6 +10,13 @@ most-suitable 20 / 10 / 5 % of the region, the median site percentile, and a sco
 
 Sites CSV columns: lon, lat, year (WGS84). Bundled: data/validation/sites_<country>.csv for the paper's 13 countries
 (from the GPVF inventory, CC-BY-4.0; see data/README.md). Any inventory in that format works, e.g. TZ-SAM points.
+
+Training overlap: the released model was refit on ALL training scenes, so it has seen the bundled inventory sites
+that fall inside training chips (nearly all post-2020 sites in most countries). The bundled CSVs therefore carry a
+`paper_split` column (train / test / unseen) and the result is broken down by it: `test` + `unseen` is the paper's
+held-out set, unseen by the paper's evaluation model but seen by the released model. Scores on bundled sites measure
+how well the released map ranks known solar, not forward skill; for that, use sites outside the inventory (e.g.
+TZ-SAM) or built after it. See docs/reproduce.md.
 """
 import argparse
 import glob
@@ -71,7 +78,9 @@ def main():
     S = pd.read_csv(a.sites)
     S = S[S.year >= min_year]
     site = sample_points(vrts, S.lon.values, S.lat.values)
-    site = site[site != 255]
+    inside = site != 255
+    split = S.paper_split.to_numpy()[inside] if "paper_split" in S.columns else None
+    site = site[inside]
     if len(site) < 5:
         sys.exit(f"only {len(site)} sites installed >= {min_year} fall inside the mapped region; need more for a meaningful test")
     rand = random_land(tiles, a.n_random)
@@ -82,6 +91,17 @@ def main():
     print(f"{info['region']} | AEF {year} map | {len(site)} sites installed >= {min_year} vs {len(rand):,} random pixels")
     print(f"  ROC-AUC {roc:.3f} | median site percentile {np.median(pct):.0f} | "
           f"sites in top 20% / 10% / 5% of the region: {cap[20]:.0%} / {cap[10]:.0%} / {cap[5]:.0%}")
+    by_split = {}
+    if split is not None:
+        groups = [("paper_train", split == "train", "in paper training chips"),
+                  ("paper_heldout", split != "train", "paper's held-out set (test + unseen chips)")]
+        for key, m, label in groups:
+            if m.sum() >= 5:
+                r = roc_auc_score(np.r_[np.ones(m.sum()), np.zeros(len(rand))], np.r_[site[m], rand].astype(float))
+                by_split[key] = dict(sites=int(m.sum()), roc_auc=round(float(r), 4))
+                print(f"    {label:44s} n={m.sum():5d}  ROC-AUC {r:.3f}")
+        print("  note: the released model was trained on these inventory sites (paper_split column; see docs/reproduce.md);\n"
+              "        for forward skill, validate on sites outside the inventory, e.g. TZ-SAM")
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -93,7 +113,8 @@ def main():
     fig.tight_layout(); f = os.path.join(a.run, "validation.png"); fig.savefig(f, dpi=150); plt.close(fig)
     json.dump(dict(region=info["region"], aef_year=year, min_install_year=min_year, sites=int(len(site)), random=int(len(rand)),
                    roc_auc=round(float(roc), 4), median_site_percentile=round(float(np.median(pct)), 1),
-                   top20=round(cap[20], 4), top10=round(cap[10], 4), top5=round(cap[5], 4), sites_file=a.sites),
+                   top20=round(cap[20], 4), top10=round(cap[10], 4), top5=round(cap[5], 4), sites_file=a.sites,
+                   by_paper_split=by_split or None),
               open(os.path.join(a.run, "validation.json"), "w"), indent=1)
     print(f"  -> {f}, validation.json")
 

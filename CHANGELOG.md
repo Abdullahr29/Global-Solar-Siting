@@ -12,6 +12,9 @@ Public release accompanying the camera-ready paper and the solar_suitability v1.
 - `scripts/validate.py`, `benchmark.py` (9 methods, Table 1), `train.py` (release recipe), `mcda_example.py`
   (bundled Greece data), `quickstart.py`, `download_model.py`.
 - Documentation: dataset format, methods, model card, data sources and licences, reproduction guide.
+- Bundled validation sites carry a `paper_split` column (train / test / unseen chips), and `validate.py` reports
+  results by it: the released all-data model has seen these sites, unlike the paper's train-split evaluation model.
+- Long runs survive dropped connections: remote reads retry on a fresh connection with back-off.
 - Removed: the Earth Engine route (`run_country.py`), the size-capped review random forest and its scripts.
 
 ## 0.1 (2026-08)
