@@ -80,6 +80,35 @@ country runs are clipped to the country outline.
 **`--lite`** uses only the MLP half of the ensemble: under half the memory (~3.5 vs ~9 GB) and faster, at a very small accuracy
 cost (13-country forward ROC-AUC 0.918 vs 0.920; TZ-SAM 0.891 vs 0.891). Outputs are labelled as the lite variant.
 
+## Use the released dataset
+
+The global map for **AEF 2025** (solar_suitability v1.0, 851 GB, 28,533 tiles, native UTM 10 m) is archived at CEDA
+(**DOI coming soon**). You do not need to download all of it:
+
+```bash
+python scripts/get_dataset.py --country Kenya                    # raw scores for one country
+python scripts/get_dataset.py --country KEN --percentile         # + within-country percentile view
+python scripts/get_dataset.py --bbox 23.5 37.8 24.2 38.2         # any area
+python scripts/get_dataset.py --country Chile --whole-tiles       # full tiles instead of a clipped cut-out
+```
+
+The dataset's format, encoding, percentile layers, tile index, STAC catalogue and known caveats are described in
+[`docs/dataset.md`](docs/dataset.md).
+
+## Reproduce the paper
+
+| | Command | Time (laptop) |
+|---|---|---|
+| Method benchmark (Table 1) | `python scripts/benchmark.py` | ~15 s |
+| Retrain the ensemble (release recipe) | `python scripts/train.py --preset sample --out models/my_model` (needs PyTorch) | ~15 s |
+| Forward validation (Fig. 2b protocol; the released model has seen the bundled sites, [see why](docs/reproduce.md#forward-validation-predictpy--validatepy)) | `python scripts/predict.py --country Greece --year 2019` then `python scripts/validate.py --run outputs/greece_2019 --sites data/validation/sites_greece.csv` | ~45 min (faster maths library) + seconds |
+| MCDA vs ensemble (Fig. 3 / Appendix H) | `python scripts/mcda_example.py` | ~10 s |
+
+[`docs/reproduce.md`](docs/reproduce.md) maps every table and figure to a script, lists what runs from the bundled
+data and what needs external downloads, and gives the expected outputs. Bundled data
+([`data/README.md`](data/README.md)): a held-out pixel sample of AEF embeddings, solar-site validation points for the
+paper's 13 countries, and a ~1 km MCDA example for Greece.
+
 ### Requirements
 
 Measured on a laptop (Apple M4 Pro, 12 cores, 24 GB RAM, home broadband), mapping 7,538 km² of northern Greece:
@@ -123,35 +152,6 @@ The code measures both of its threading strategies on first use and keeps the fa
 - **Behind a firewall / proxy:** the scripts need HTTPS access to `storage.googleapis.com` (AEF tiles),
   `data.source.coop` (tile index) and `naciscdn.org` (country outlines, first use only). GDAL honours
   `HTTPS_PROXY`.
-
-## Use the released dataset
-
-The global map for **AEF 2025** (solar_suitability v1.0, 851 GB, 28,533 tiles, native UTM 10 m) is archived at CEDA
-(**DOI coming soon**). You do not need to download all of it:
-
-```bash
-python scripts/get_dataset.py --country Kenya                    # raw scores for one country
-python scripts/get_dataset.py --country KEN --percentile         # + within-country percentile view
-python scripts/get_dataset.py --bbox 23.5 37.8 24.2 38.2         # any area
-python scripts/get_dataset.py --country Chile --whole-tiles       # full tiles instead of a clipped cut-out
-```
-
-The dataset's format, encoding, percentile layers, tile index, STAC catalogue and known caveats are described in
-[`docs/dataset.md`](docs/dataset.md).
-
-## Reproduce the paper
-
-| | Command | Time (laptop) |
-|---|---|---|
-| Method benchmark (Table 1) | `python scripts/benchmark.py` | ~15 s |
-| Retrain the ensemble (release recipe) | `python scripts/train.py --preset sample --out models/my_model` (needs PyTorch) | ~15 s |
-| Forward validation (Fig. 2b protocol; the released model has seen the bundled sites, [see why](docs/reproduce.md#forward-validation-predictpy--validatepy)) | `python scripts/predict.py --country Greece --year 2019` then `python scripts/validate.py --run outputs/greece_2019 --sites data/validation/sites_greece.csv` | ~45 min (faster maths library) + seconds |
-| MCDA vs ensemble (Fig. 3 / Appendix H) | `python scripts/mcda_example.py` | ~10 s |
-
-[`docs/reproduce.md`](docs/reproduce.md) maps every table and figure to a script, lists what runs from the bundled
-data and what needs external downloads, and gives the expected outputs. Bundled data
-([`data/README.md`](data/README.md)): a held-out pixel sample of AEF embeddings, solar-site validation points for the
-paper's 13 countries, and a ~1 km MCDA example for Greece.
 
 ## Repository layout
 
