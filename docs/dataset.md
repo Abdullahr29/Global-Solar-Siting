@@ -19,6 +19,7 @@ into a narrow band (paper, Appendix E). Within-country **percentiles** (below) a
 | | |
 |---|---|
 | Format | Cloud-Optimised GeoTIFF (COG), one file per AlphaEarth tile (~82 km x 82 km) |
+| Size | 28,533 files, 851 GB; 1.35 x 10^12 valid pixels (~135 million km²), 250 countries and territories, 114 UTM zones |
 | Grid | native UTM (EPSG:326zz / 327zz), 10 m, north-up |
 | Band | 1 band, `suitability`, **uint8** |
 | Encoding | value = round(P x 250); **P = value x 0.004** (scale 0.004, offset 0, stored in each file); **255 = no data** |
@@ -47,7 +48,7 @@ solar_suitability_v1.0/
              global_<zone>.vrt (+ _pct)     all tiles of a UTM zone, with global percentiles
   stac/      catalog.json + collection + one item per tile (STAC 1.0)
   model/     solar_suitability_model_v1.0/  the model that produced the map (see model_card.md)
-  docs/      QA_REPORT.md  inventory.md  quicklook_tiles.png
+  docs/      QA_REPORT.md  inventory.md  quicklook_tiles.png  preview_global_suitability.png
 ```
 
 File names carry the AlphaEarth tile id, so every file traces to its source embedding tile. There are no
@@ -66,7 +67,7 @@ too few samples for a stable table (73 small territories) use the global table (
 - **Part of it:** `python scripts/get_dataset.py --country <name|ISO3> [--percentile]` (or `--bbox`,
   `--region-file`; `--whole-tiles` for unclipped files). Reads only what it needs over HTTPS.
 - **A country's files directly:** `lookup/<ISO3>.txt` lists them; prepend the archive URL and fetch with `wget -i`.
-- **Everything:** the archive is ~850 GB; mirror it with the tools CEDA documents.
+- **Everything:** the archive is 851 GB; mirror it with the tools CEDA documents.
 - **Open in GIS:** any `.tif` or `mosaics/*.vrt` opens in QGIS/ArcGIS; in Python, `rasterio.open(path)`; the
   scale is in the file, so `read(1, masked=True) * 0.004` gives P(solar).
 
@@ -84,7 +85,8 @@ too few samples for a stable table (73 small territories) use the global table (
   under-scored even if suitable. Read alongside resource, grid and policy information.
 - Pixel scores: does not test whether enough contiguous land exists for a plant of a given size; discrimination is
   weaker for the largest (>100 MW) farms (paper, Appendix F).
-- One embedding year (2025): land that already hosts solar in 2025 scores high (it looks like solar land).
+- One embedding year (2025): land that already hosts solar in 2025 scores high (it looks like solar land; sites
+  around Athens built 2017-2022 sit at a median 98th percentile of the area's land). Mask known installations to see only new land.
 - National score levels differ (weak-country effect, Appendix E): compare countries on percentiles.
 - **Border tiles in the archive's country mosaics:** `mosaics/<ISO3>_<zone>.vrt` include whole tiles, so pixels of a
   neighbouring country inside a border tile also appear (and, in `_pct.vrt`, get this country's percentiles).

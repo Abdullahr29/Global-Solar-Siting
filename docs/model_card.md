@@ -33,6 +33,11 @@
 | Leak-proof temporal (imagery ≤ 2021, 2024 installs) | mean ROC-AUC 0.90 |
 | vs published MCDA (16 configurations, 13 countries) | +0.06 to +0.30 ROC-AUC in every country |
 
+The released (all-data) model itself: ROC-AUC 0.922 on validation sites outside every chip it was trained on
+(13 countries, n-weighted; split model 0.907), 0.894 on independent TZ-SAM sites (0.891), leave-one-country-out mean
+0.81 (0.81). On bundled inventory sites inside its training chips it scores higher, which measures fit, not
+forward skill ([`docs/reproduce.md`](reproduce.md#forward-validation-predictpy--validatepy)).
+
 Released (all-data) ensemble vs the all-data random forest alone (paired bootstrap): TZ-SAM +0.010 [+0.009, +0.011],
 leak-free country +0.009 [+0.007, +0.010], leave-one-country-out +0.012 [+0.007, +0.017]; temporal −0.002 [−0.004, 0.000].
 
@@ -48,6 +53,7 @@ resource, grid, environmental and social layers; studying siting patterns across
 - Skill varies by country; weaker for the largest (> 100 MW) farms; transfer to countries absent from training is
   weaker (leave-one-country-out).
 - Pixel-level: does not check for contiguous area, ownership, grid capacity, permitting or protected status.
+- Land already covered by solar scores high; scores rank land and are not calibrated probabilities of development.
 - Inherits AlphaEarth's characteristics (effective detail can be coarser than 10 m in places).
 - **Not for permitting or investment decisions without local data and assessment.**
 

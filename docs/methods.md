@@ -45,7 +45,7 @@ best on every held-out test. The released model is the same recipe refit on **al
    `scripts/predict.py` runs the identical computation on any region.
 2. **Land mask:** AlphaEarth also covers near-shore sea. Pixels more than 500 m from land were set to no data, with
    land = OpenStreetMap land polygons ∪ ESA WorldCover 2021 (all classes except permanent water). Kept pixels are
-   byte-identical to the model output; tiles left empty (open sea) were dropped.
+   byte-identical to the model output; tiles left empty (open sea, 2,506) were dropped, leaving 28,533 files.
 3. **Index and catalogue:** a tile index (GeoParquet / GeoPackage / CSV) with footprints, checksums and Natural
    Earth country assignment; per-country file lists and virtual mosaics; a STAC catalogue.
 4. **Percentiles:** global and within-country lookup tables from ~49 M pixels sampled uniformly over released land,

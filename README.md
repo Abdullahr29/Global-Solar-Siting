@@ -12,7 +12,7 @@ resembles land that later became a solar farm, two years before construction.
 
 ![Global solar suitability](figures/global_suitability_map.png)
 
-*Global suitability (AEF 2025); brighter = more suitable. Preview of the 10 m dataset.*
+*Mean suitability score per 0.1° cell (AEF 2025, linear scale); brighter = more suitable. Preview of the 10 m dataset.*
 
 **What you can do with this repository**
 
@@ -126,7 +126,7 @@ The code measures both of its threading strategies on first use and keeps the fa
 
 ## Use the released dataset
 
-The global map for **AEF 2025** (solar_suitability v1.0, ~850 GB, 28,000+ tiles, native UTM 10 m) is archived at CEDA
+The global map for **AEF 2025** (solar_suitability v1.0, 851 GB, 28,533 tiles, native UTM 10 m) is archived at CEDA
 (**DOI coming soon**). You do not need to download all of it:
 
 ```bash

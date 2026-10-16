@@ -1,5 +1,5 @@
 """Get part of the released global dataset (solar_suitability v1.0, AEF 2025): a country or any area, without
-downloading the whole ~850 GB archive.
+downloading the whole 851 GB archive.
 
     python scripts/get_dataset.py --country Kenya                     # raw scores, clipped to the country
     python scripts/get_dataset.py --country KEN --percentile          # + within-country percentile view
@@ -50,26 +50,30 @@ def gdal_path(root, rel):
     return ("/vsicurl/" + root.rstrip("/") + "/" + rel) if is_url(root) else os.path.join(root, rel)
 
 
+def metadata(root, rel, refresh=False):
+    """Local path of a dataset metadata file (index, lookup tables). A local root is read in place; a remote one is
+    cached per root, and --refresh-index re-downloads all cached files together (after a dataset update)."""
+    from solarsiting.aef import cache_dir
+    if not is_url(root):
+        return os.path.join(root, rel)
+    key = "".join(ch if ch.isalnum() else "_" for ch in root)[-80:]
+    p = os.path.join(cache_dir(), f"dataset_{key}", rel)
+    if refresh or not os.path.exists(p):
+        print(f"downloading {rel} (once) ...", flush=True)
+        fetch_to(root, rel, p)
+    return p
+
+
 def load_index(root, refresh=False):
     import geopandas as gpd
-    from solarsiting.aef import cache_dir
-    key = "".join(ch if ch.isalnum() else "_" for ch in root)[-80:]
-    p = os.path.join(cache_dir(), f"dataset_index_{key}.parquet")
-    if refresh or not os.path.exists(p):
-        print("downloading the dataset tile index (once) ...", flush=True)
-        fetch_to(root, "index/tiles.parquet", p)
-    return gpd.read_parquet(p)
+    return gpd.read_parquet(metadata(root, "index/tiles.parquet", refresh))
 
 
-def lut(root, iso3=None):
+def lut(root, iso3=None, refresh=False):
     """code (0-250) -> percentile, from the dataset's lookup tables (within-country if iso3 has a table)."""
     import pandas as pd
-    from solarsiting.aef import cache_dir
     name = "percentiles_by_country.csv" if iso3 else "percentiles_global.csv"
-    p = os.path.join(cache_dir(), "dataset_" + name)
-    if not os.path.exists(p):
-        fetch_to(root, f"lookup/{name}", p)
-    d = pd.read_csv(p)
+    d = pd.read_csv(metadata(root, f"lookup/{name}", refresh))
     if iso3:
         d = d[d.iso3 == iso3]
         if d.empty:
@@ -122,7 +126,8 @@ def main():
     ap.add_argument("--out", help="output folder (default: outputs/dataset_<region>)")
     ap.add_argument("--root", default=os.environ.get("SOLARSITING_DATASET", DEFAULT_ROOT),
                     help="dataset root: the CEDA URL (default), a mirror URL, or a local folder")
-    ap.add_argument("--refresh-index", action="store_true")
+    ap.add_argument("--refresh-index", action="store_true",
+                    help="re-download the cached tile index and percentile tables (after a dataset update)")
     a = ap.parse_args()
     if "PLACEHOLDER" in a.root:
         sys.exit("The dataset's CEDA link is not public yet; it will be set here and in the README at release.\n"
@@ -168,9 +173,10 @@ def main():
               f" | {(time.time() - t0) / 60:.1f} min")
     if not files:
         sys.exit("no released pixels inside this region (all sea, or outside the land mask)")
-    table, kind = (lut(a.root, iso3) if (a.percentile and iso3) else (lut(a.root) if a.percentile else (None, None)))
+    rf = a.refresh_index
+    table, kind = (lut(a.root, iso3, rf) if (a.percentile and iso3) else (lut(a.root, refresh=rf) if a.percentile else (None, None)))
     if a.percentile and table is None:
-        table, kind = lut(a.root); print(f"  no within-country table for {iso3}; using the global percentiles")
+        table, kind = lut(a.root, refresh=rf); print(f"  no within-country table for {iso3}; using the global percentiles")
     by_zone = {}
     for f in files:
         by_zone.setdefault(os.path.basename(os.path.dirname(f)), []).append(f)
