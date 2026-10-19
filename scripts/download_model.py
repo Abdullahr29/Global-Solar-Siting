@@ -17,7 +17,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "src"))
 
 # TODO(release): replace with the CEDA archive URL of the model folder once the DOI is minted.
-DEFAULT_SOURCE = "https://data.ceda.ac.uk/PLACEHOLDER/solar_suitability_v1.0/model/solar_suitability_model_v1.0"
+DEFAULT_SOURCE = "https://data.ceda.ac.uk/PLACEHOLDER/solar_suitability_v1.0/model"
 FILES = ("model.json", "mlp.npz", "rf.joblib")
 
 

@@ -13,8 +13,8 @@ reads only the needed windows over HTTPS (or copies whole tiles with --whole-til
 outputs/dataset_<region>/ the same layout as scripts/predict.py: tiles/<zone>/*.tif (uint8, P = value * 0.004,
 255 = no data), mosaic_<zone>.vrt, mosaic_<zone>_pct.vrt (with --percentile), quicklook.png, run.json.
 
-Percentiles come from the dataset's own lookup tables: within-country (lookup/percentiles_by_country.csv) for
---country, global (lookup/percentiles_global.csv) otherwise. They are applied on the fly (VRT lookup tables), so they
+Percentiles come from the dataset's own lookup tables: within-country (lookup/percentiles/percentiles_by_country.csv)
+for --country, global (lookup/percentiles/percentiles_global.csv) otherwise. They are applied on the fly (VRT lookup tables), so they
 take no extra disk space. Use --root to read a local or mirrored copy of the dataset.
 """
 import argparse
@@ -64,16 +64,31 @@ def metadata(root, rel, refresh=False):
     return p
 
 
+def split_antimeridian(g):
+    """A footprint drawn the long way round the globe (an index made before the 180° fix) -> its two real parts."""
+    import shapely.affinity
+    from shapely.geometry import MultiPolygon, Polygon, box
+    if g.geom_type != "Polygon" or g.bounds[2] - g.bounds[0] <= 180:
+        return g
+    x, y = map(np.asarray, g.exterior.xy)
+    P = Polygon(zip(np.where(x < 0, x + 360, x), y))
+    parts = [P.intersection(box(-180, -90, 180, 90)),
+             shapely.affinity.translate(P.intersection(box(180, -90, 540, 90)), xoff=-360)]
+    return MultiPolygon([q for p in parts for q in getattr(p, "geoms", [p]) if not q.is_empty and q.area > 0])
+
+
 def load_index(root, refresh=False):
     import geopandas as gpd
-    return gpd.read_parquet(metadata(root, "index/tiles.parquet", refresh))
+    idx = gpd.read_parquet(metadata(root, "index/tiles.parquet", refresh))
+    idx["geometry"] = idx.geometry.apply(split_antimeridian)      # no-op for the current index
+    return idx
 
 
 def lut(root, iso3=None, refresh=False):
     """code (0-250) -> percentile, from the dataset's lookup tables (within-country if iso3 has a table)."""
     import pandas as pd
     name = "percentiles_by_country.csv" if iso3 else "percentiles_global.csv"
-    d = pd.read_csv(metadata(root, f"lookup/{name}", refresh))
+    d = pd.read_csv(metadata(root, f"lookup/percentiles/{name}", refresh))
     if iso3:
         d = d[d.iso3 == iso3]
         if d.empty:

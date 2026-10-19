@@ -35,19 +35,20 @@ model scores.
 solar_suitability_v1.0/
   README.md  LICENSE  CHANGELOG.md  model_card.md
   data/10m/2025/<utm_zone>/solarsuit_v1.0_2025_<zone>_<aef_tile_id>.tif     the map (one file per AEF tile)
-  index/     tiles.parquet | tiles.gpkg | tiles.csv     one row per file: footprint (EPSG:4326), zone, EPSG,
+  index/     tiles.parquet | tiles.gpkg | tiles.csv     one row per file: footprint (EPSG:4326; split at 180° for
+                                                         the 36 tiles that cross it), zone, EPSG,
                                                          bounds, valid fraction, mean suitability, size, SHA-256,
                                                          countries (ISO3, ';'-separated), source AEF tile, n_valid
-  lookup/    countries.csv                  ISO3, name, continent, number of tiles, UTM zones
-             country_tiles.csv              ISO3 -> files (long table)
-             <ISO3>.txt                     relative file paths for one country (wget / rsync ready)
-             percentiles_global.csv         code -> global percentile of land
-             percentiles_by_country.csv     ISO3, code -> within-country percentile
+  lookup/    country_files/<ISO3>.txt       relative file paths for one country (wget / rsync ready)
+             country_tables/countries.csv   ISO3, name, continent, number of tiles, UTM zones
+             country_tables/country_tiles.csv   ISO3 -> files (long table)
+             percentiles/percentiles_global.csv       code -> global percentile of land
+             percentiles/percentiles_by_country.csv   ISO3, code -> within-country percentile
   mosaics/   <ISO3>_<zone>.vrt              per country and UTM zone: a virtual mosaic of the tiles
              <ISO3>_<zone>_pct.vrt          the same as within-country percentiles (Float32, 0-100, no data -1)
              global_<zone>.vrt (+ _pct)     all tiles of a UTM zone, with global percentiles
-  stac/      catalog.json + collection + one item per tile (STAC 1.0)
-  model/     solar_suitability_model_v1.0/  the model that produced the map (see model_card.md)
+  stac/      catalog.json + collection + one item per tile (STAC 1.1; projection, raster, file extensions)
+  model/     model.json  rf.joblib  mlp.npz  the model that produced the map (see model_card.md)
   docs/      QA_REPORT.md  inventory.md  quicklook_tiles.png  preview_global_suitability.png
 ```
 
@@ -58,7 +59,7 @@ country folders: tiles cross borders and countries span several UTM zones; use `
 
 A pixel's **within-country percentile** is the share of the country's land (released pixels) that it outscores;
 the **global percentile** is the same against all land. They are monotonic transforms of the score (ROC-AUC is
-unchanged) and are stored as lookup tables (`lookup/`), applied on the fly by the `_pct.vrt` files, so they take no
+unchanged) and are stored as lookup tables (`lookup/percentiles/`), applied on the fly by the `_pct.vrt` files, so they take no
 extra space. Tables were built from ~49 million pixels sampled uniformly from the released land; countries with
 too few samples for a stable table (73 small territories) use the global table (`table` column says which).
 
@@ -66,7 +67,7 @@ too few samples for a stable table (73 small territories) use the global table (
 
 - **Part of it:** `python scripts/get_dataset.py --country <name|ISO3> [--percentile]` (or `--bbox`,
   `--region-file`; `--whole-tiles` for unclipped files). Reads only what it needs over HTTPS.
-- **A country's files directly:** `lookup/<ISO3>.txt` lists them; prepend the archive URL and fetch with `wget -i`.
+- **A country's files directly:** `lookup/country_files/<ISO3>.txt` lists them; prepend the archive URL and fetch with `wget -i`.
 - **Everything:** the archive is 851 GB; mirror it with the tools CEDA documents.
 - **Open in GIS:** any `.tif` or `mosaics/*.vrt` opens in QGIS/ArcGIS; in Python, `rasterio.open(path)`; the
   scale is in the file, so `read(1, masked=True) * 0.004` gives P(solar).
