@@ -109,7 +109,7 @@ data and what needs external downloads, and gives the expected outputs. Bundled 
 ([`data/README.md`](data/README.md)): a held-out pixel sample of AEF embeddings, solar-site validation points for the
 paper's 13 countries, and a ~1 km MCDA example for Greece.
 
-### Requirements
+## Requirements
 
 Measured on a laptop (Apple M4 Pro, 12 cores, 24 GB RAM, home broadband), mapping 7,538 km² of northern Greece:
 
@@ -127,7 +127,7 @@ regions in parallel on several machines, or use the [released dataset](#use-the-
 Speed also scales with cores and bandwidth. `--threads` sets CPU threads (default: all), `--io-threads` parallel
 downloads (default 8).
 
-#### Speed up the maths library
+### Speed up the maths library
 
 Half of the model (the MLP) is matrix arithmetic, so its speed depends on the BLAS library NumPy uses. The default
 conda install uses OpenBLAS; switching is one command and changes results by at most ±1 code on ~1 pixel in a
@@ -139,7 +139,7 @@ million:
 
 The code measures both of its threading strategies on first use and keeps the faster one, so no settings are needed.
 
-### Platform notes
+## Platform notes
 
 - **Windows:** use conda (`environment.yml`); GDAL from pip wheels works but is less predictable. All scripts guard
   `if __name__ == "__main__"`, as Windows requires for parallel work. Paths with spaces need quotes.
