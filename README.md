@@ -186,4 +186,4 @@ Code: MIT ([`LICENSE`](LICENSE)). Model and dataset: CC BY 4.0. Bundled third-pa
 
 This work was funded by the European Space Agency (ESA) Dragon Cooperation Programme (project FUCEO, funding ID 95452)
 and used JASMIN, the UK's collaborative data analysis environment. Contact: Abdullah Rehman (Department of Physics,
-University of Oxford; King's College London), abdullah.rehman@kcl.ac.uk.
+University of Oxford; Department of Engineering, King's College London), abdullah.rehman@kcl.ac.uk.

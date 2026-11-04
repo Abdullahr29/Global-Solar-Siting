@@ -8,13 +8,13 @@ repository-code: "https://github.com/Abdullahr29/Global-Solar-Siting"
 authors:
   - family-names: Rehman
     given-names: Abdullah
-    affiliation: "University of Oxford, Department of Physics (Atmospheric, Oceanic and Planetary Physics); King's College London"
+    affiliation: "Department of Physics, University of Oxford; Department of Engineering, King's College London"
   - family-names: Paletta
     given-names: Quentin
-    affiliation: "European Space Agency"
+    affiliation: "ESA Φ-Lab, ESRIN, European Space Agency; ESA Climate Office, ECSAT, European Space Agency"
   - family-names: Song
     given-names: Rui
-    affiliation: "University of Oxford"
+    affiliation: "Department of Physics, University of Oxford"
 keywords: [solar energy, site suitability, geospatial embeddings, AlphaEarth Foundations, remote sensing, climate change]
 preferred-citation:
   type: conference-paper
