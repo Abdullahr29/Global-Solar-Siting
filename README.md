@@ -6,7 +6,7 @@ actually been built. A random forest + MLP ensemble reads each 10 m pixel's
 (AEF) embedding (64 numbers summarising a year of satellite observations) and predicts `P(solar)`: how much the land
 resembles land that later became a solar farm, two years before construction.
 
-> 📦 **Dataset — solar_suitability v1.0 (global, 10 m, AEF 2025): DOI coming soon** (CEDA archive; link added here at release)<br>
+> 📦 **Dataset — Global Solar PV Siting Suitability 2025–2030 (v1.0), global at 10 m: DOI coming soon** (CEDA archive; link added here at release)<br>
 > 📄 **Paper:** Rehman, Paletta & Song, *Global Solar Siting from Geospatial Embeddings*, Tackling Climate Change with
 > Machine Learning workshop, NeurIPS 2026 — link coming soon ([citation](#citation))
 
@@ -82,7 +82,7 @@ cost (13-country forward ROC-AUC 0.918 vs 0.920; TZ-SAM 0.891 vs 0.891). Outputs
 
 ## Use the released dataset
 
-The global map for **AEF 2025** (solar_suitability v1.0, 851 GB, 28,533 tiles, native UTM 10 m) is archived at CEDA
+The global map, **Global Solar PV Siting Suitability 2025–2030 (v1.0)** (built from AEF 2025; 851 GB, 28,533 tiles, native UTM 10 m), is archived at CEDA
 (**DOI coming soon**). You do not need to download all of it:
 
 ```bash
@@ -185,4 +185,5 @@ Code: MIT ([`LICENSE`](LICENSE)). Model and dataset: CC BY 4.0. Bundled third-pa
 (see [`data/README.md`](data/README.md)).
 
 This work was funded by the European Space Agency (ESA) Dragon Cooperation Programme (project FUCEO, funding ID 95452)
-and used JASMIN, the UK's collaborative data analysis environment. Contact: abdullah.rehman@kcl.ac.uk.
+and used JASMIN, the UK's collaborative data analysis environment. Contact: Abdullah Rehman (Department of Physics,
+University of Oxford; King's College London), abdullah.rehman@kcl.ac.uk.

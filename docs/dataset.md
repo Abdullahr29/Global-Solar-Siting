@@ -1,6 +1,9 @@
-# The dataset: solar_suitability v1.0
+# The dataset: Global Solar PV Siting Suitability 2025–2030 (v1.0)
 
-**Global 10 m solar PV siting suitability for AEF year 2025**, produced with the RF+MLP ensemble in this repository.
+**Global 10 m solar PV siting suitability for development over 2025–2030**, produced with the RF+MLP ensemble in
+this repository from the AlphaEarth Foundations 2025 embedding. The map describes land as observed in 2025; the model
+learned from land two years before installation and keeps its skill for installations up to seven years after the
+imagery (ROC-AUC 0.94 at seven years), hence 2025–2030. Land that changes after 2025 is not reflected.
 Archived at CEDA (DOI: *coming soon*). Licence: CC BY 4.0.
 
 ## What a value means
