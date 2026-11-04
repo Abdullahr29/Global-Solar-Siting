@@ -6,7 +6,7 @@ actually been built. A random forest + MLP ensemble reads each 10 m pixel's
 (AEF) embedding (64 numbers summarising a year of satellite observations) and predicts `P(solar)`: how much the land
 resembles land that later became a solar farm, two years before construction.
 
-> 📦 **Dataset — Global Solar PV Siting Suitability 2025–2030 (v1.0), global at 10 m: DOI coming soon** (CEDA archive; link added here at release)<br>
+> 📦 **Dataset — Global Solar PV Siting Suitability (v1.0), global at 10 m, for 2025–2030: DOI coming soon** (CEDA archive; link added here at release)<br>
 > 📄 **Paper:** Rehman, Paletta & Song, *Global Solar Siting from Geospatial Embeddings*, Tackling Climate Change with
 > Machine Learning workshop, NeurIPS 2026 — link coming soon ([citation](#citation))
 
@@ -82,7 +82,7 @@ cost (13-country forward ROC-AUC 0.918 vs 0.920; TZ-SAM 0.891 vs 0.891). Outputs
 
 ## Use the released dataset
 
-The global map, **Global Solar PV Siting Suitability 2025–2030 (v1.0)** (built from AEF 2025; 851 GB, 28,533 tiles, native UTM 10 m), is archived at CEDA
+The global map, **Global Solar PV Siting Suitability (v1.0)** (built from AEF 2025 for 2025–2030; 851 GB, 28,533 tiles, native UTM 10 m), is archived at CEDA
 (**DOI coming soon**). You do not need to download all of it:
 
 ```bash

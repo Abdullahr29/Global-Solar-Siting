@@ -1,4 +1,4 @@
-# The dataset: Global Solar PV Siting Suitability 2025–2030 (v1.0)
+# The dataset: Global Solar PV Siting Suitability (v1.0)
 
 **Global 10 m solar PV siting suitability for development over 2025–2030**, produced with the RF+MLP ensemble in
 this repository from the AlphaEarth Foundations 2025 embedding. The map describes land as observed in 2025; the model
@@ -36,8 +36,9 @@ model scores.
 
 ```
 solar_suitability_v1.0/
-  README.md  LICENSE  CHANGELOG.md  model_card.md
+  README.md  LICENSE  model_card.md  metadata.yaml (archive metadata)
   data/10m/2025/<utm_zone>/solarsuit_v1.0_2025_<zone>_<aef_tile_id>.tif     the map (one file per AEF tile)
+                          ..._quicklook.png                                256 px preview of each tile (STAC thumbnail)
   index/     tiles.parquet | tiles.gpkg | tiles.csv     one row per file: footprint (EPSG:4326; split at 180° for
                                                          the 36 tiles that cross it), zone, EPSG,
                                                          bounds, valid fraction, mean suitability, size, SHA-256,
@@ -45,14 +46,18 @@ solar_suitability_v1.0/
   lookup/    country_files/<ISO3>.txt       relative file paths for one country (wget / rsync ready)
              country_tables/countries.csv   ISO3, name, continent, number of tiles, UTM zones
              country_tables/country_tiles.csv   ISO3 -> files (long table)
+             country_tables/country_summary.csv per country: area, download size, mean / median score, share >= 0.5,
+                                            share in the global top 10 % (estimated from the percentile sample)
              percentiles/percentiles_global.csv       code -> global percentile of land
              percentiles/percentiles_by_country.csv   ISO3, code -> within-country percentile
   mosaics/   <ISO3>_<zone>.vrt              per country and UTM zone: a virtual mosaic of the tiles
              <ISO3>_<zone>_pct.vrt          the same as within-country percentiles (Float32, 0-100, no data -1)
              global_<zone>.vrt (+ _pct)     all tiles of a UTM zone, with global percentiles
-  stac/      catalog.json + collection + one item per tile (STAC 1.1; projection, raster, file extensions)
-  model/     model.json  rf.joblib  mlp.npz  the model that produced the map (see model_card.md)
+  stac/      catalog.json + collection + one item per tile (STAC 1.1; projection, raster, file, render extensions;
+             a thumbnail per item)
+  model/     model.json  rf.joblib  mlp.npz  supporting material: the model that produced the map (model_card.md)
   docs/      QA_REPORT.md  inventory.md  quicklook_tiles.png  preview_global_suitability.png
+             styles/suitability_score.qml, styles/suitability_percentile.qml   QGIS colour styles (magma)
 ```
 
 File names carry the AlphaEarth tile id, so every file traces to its source embedding tile. There are no
