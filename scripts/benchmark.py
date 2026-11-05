@@ -58,7 +58,7 @@ def main():
     t = time.time(); report("QDA", QuadraticDiscriminantAnalysis().fit(X, y).predict_proba(Xt)[:, 1], t)
     t = time.time(); lr = LogisticRegression(max_iter=300, C=1.0, class_weight="balanced").fit(S, y)
     report("Logistic probe", lr.predict_proba(St)[:, 1], t)
-    t = time.time(); me = LogisticRegression(penalty="l1", solver="saga", C=0.5, max_iter=200, class_weight="balanced")
+    t = time.time(); me = LogisticRegression(l1_ratio=1.0, solver="saga", C=0.5, max_iter=200, class_weight="balanced")
     me.fit(np.hstack([S, S ** 2]), y)
     report("MaxEnt", me.predict_proba(np.hstack([St, St ** 2]))[:, 1], t, "(IWLR-equivalent: L1 logistic on [x, x^2])")
     t = time.time(); rbf = RBFSampler(n_components=512, gamma=1.0 / 64, random_state=0).fit(S)

@@ -35,7 +35,9 @@
 
 The released (all-data) model itself: ROC-AUC 0.922 on validation sites outside every chip it was trained on
 (13 countries, n-weighted; split model 0.907), 0.894 on independent TZ-SAM sites (0.891), leave-one-country-out mean
-0.81 (0.81). On bundled inventory sites inside its training chips it scores higher, which measures fit, not
+0.81 (0.81). Deep look-back (map from AEF 2017, sites installed 2-7 years later): 0.968 overall and 0.941 for sites
+built seven years after the imagery (0.962 / 0.932), the basis for reading the 2025 map as suitability over
+2025–2030. On bundled inventory sites inside its training chips it scores higher, which measures fit, not
 forward skill ([`docs/reproduce.md`](reproduce.md#forward-validation-predictpy--validatepy)).
 
 Released (all-data) ensemble vs the all-data random forest alone (paired bootstrap): TZ-SAM +0.010 [+0.009, +0.011],
