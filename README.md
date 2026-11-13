@@ -82,7 +82,7 @@ cost (13-country forward ROC-AUC 0.918 vs 0.920; TZ-SAM 0.891 vs 0.891). Outputs
 
 ## Use the released dataset
 
-The global map, **Global Solar PV Siting Suitability (v1.0)** (built from AEF 2025 for 2025–2030; 851 GB, 28,533 tiles, native UTM 10 m), is archived at CEDA
+The global map, **Global Solar PV Siting Suitability (v1.0)** (built from AEF 2025 for 2025–2030; 851 GB, 28,533 tiles, native UTM 10 m), is archived
 (**DOI coming soon**). You do not need to download all of it:
 
 ```bash
